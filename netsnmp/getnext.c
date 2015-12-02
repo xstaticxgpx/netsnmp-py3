@@ -34,7 +34,7 @@ getnext(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO", &session, &varlist)) {
         //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "getnext: unable to parse tuple\n");
-        return;
+        return NULL;
     }
 
     ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
@@ -62,7 +62,7 @@ getnext(PyObject *self, PyObject *args)
                 snmp_free_pdu(pdu);
                 snmp_sess_close(ss);
                 PyErr_Format(SNMPError, "getnext: unknown object ID (%s)\n", (request ? request : "<null>"));
-                return;
+                return NULL;
             }
             Py_DECREF(varbind);
         }
@@ -90,7 +90,7 @@ getnext(PyObject *self, PyObject *args)
         snmp_free_pdu(response);
         snmp_sess_close(ss);
         PyErr_Format(SNMPError, "%s\n", err_bufp);
-        return;
+        return NULL;
     } else {
         /* initialize return tuple:
         res_tuple = PyTuple_New(varlist_len);
@@ -115,7 +115,7 @@ getnext(PyObject *self, PyObject *args)
                  *                              int *buf_overflow,
                  *                              const oid * objid, size_t objidlen)
                  */
-                netsnmp_sprint_realloc_objid(&mib_bufp, &mib_buf_len,
+                netsnmp_sprint_realloc_objid((u_char **)&mib_bufp, &mib_buf_len,
                                              &out_len, 1, &buf_over,
                                              var->name, var->name_length);
 
@@ -132,7 +132,7 @@ getnext(PyObject *self, PyObject *args)
                     snmp_free_pdu(response);
                     snmp_sess_close(ss);
                     PyErr_Format(SNMPError, "getnext: null response (%s)\n",  mib_buf);
-                    return;
+                    return NULL;
                 } else {
                     __py_attr_set_string(varbind, "response", str_buf, len);
 

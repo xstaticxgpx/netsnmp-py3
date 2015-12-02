@@ -8,7 +8,6 @@ walk(PyObject *self, PyObject *args)
 {
     PyObject *session;
     PyObject *varlist;
-    PyObject *varlist_iter;
     PyObject *varbind;
     PyObject *nullvar;
     netsnmp_session *ss;
@@ -16,7 +15,6 @@ walk(PyObject *self, PyObject *args)
     netsnmp_pdu *pdu, *response;
     netsnmp_variable_list *var;
     int varindx;
-    int varlist_ind;
     int varlist_len = 0;
     int varlist_request_len;
     oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
@@ -41,9 +39,9 @@ walk(PyObject *self, PyObject *args)
     int running;
 
     if (!PyArg_ParseTuple(args, "OO", &session, &varlist)) {
-        snmp_sess_close(ss);
+        //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "walk: unable to parse tuple\n");
-        return;
+        return NULL;
     }
 
     ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
@@ -111,7 +109,7 @@ walk(PyObject *self, PyObject *args)
                         snmp_free_pdu(response);
                         snmp_sess_close(ss);
                         PyErr_Format(SNMPError, "%s\n", err_bufp);
-                        return;
+                        return NULL;
                     } else {
                         for(var = response->variables; var;
                             var = var->next_variable, out_len = 0) {
@@ -154,7 +152,7 @@ walk(PyObject *self, PyObject *args)
                                  *                              int *buf_overflow,
                                  *                              const oid * objid, size_t objidlen)
                                  */
-                                netsnmp_sprint_realloc_objid(&mib_bufp, &mib_buf_len,
+                                netsnmp_sprint_realloc_objid((u_char **)&mib_bufp, &mib_buf_len,
                                                              &out_len, 1, &buf_over,
                                                              var->name, var->name_length);
                 
@@ -171,7 +169,7 @@ walk(PyObject *self, PyObject *args)
                                     snmp_free_pdu(response);
                                     snmp_sess_close(ss);
                                     PyErr_Format(SNMPError, "walk: null response (%s)\n",  mib_buf);
-                                    return;
+                                    return NULL;
                                 } else {
                                     __py_attr_set_string(varbind, "response", str_buf, len);
                 
@@ -194,7 +192,7 @@ walk(PyObject *self, PyObject *args)
             } else {
                 snmp_sess_close(ss);
                 PyErr_Format(SNMPError, "walk: unknown object ID (%s)\n", (request ? request : "<null>"));
-                return;
+                return NULL;
             }
         }
     }

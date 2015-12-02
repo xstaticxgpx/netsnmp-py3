@@ -13,16 +13,43 @@ Recommended to build this against a manually compiled NET-SNMP source - no need 
 $ pwd
 /Build/net-snmp-5.7.3
 
-$ ./configure --prefix=/opt --enable-minimalist --enable-ipv6 --with-defaults
+$ ./configure --prefix=/opt --enable-ucd-snmp-compatibility --enable-ipv6 --with-defaults
 ..
 $ make
 ..
 ```
 
+Build extension and check LDD for library linking, configure ld.so.conf if nescessary:
+```
+$ python3 setup.py --basedir=/Build/net-snmp-5.7.3 build_ext -i
+running build_ext
+building 'netsnmp._api' extension
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/session.c -o build/temp.linux-x86_64-3.4/netsnmp/session.o
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/get.c -o build/temp.linux-x86_64-3.4/netsnmp/get.o
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/getnext.c -o build/temp.linux-x86_64-3.4/netsnmp/getnext.o
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/walk.c -o build/temp.linux-x86_64-3.4/netsnmp/walk.o
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/extra.c -o build/temp.linux-x86_64-3.4/netsnmp/extra.o
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/_api.c -o build/temp.linux-x86_64-3.4/netsnmp/_api.o
+x86_64-linux-gnu-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,relro -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 build/temp.linux-x86_64-3.4/netsnmp/session.o build/temp.linux-x86_64-3.4/netsnmp/get.o build/temp.linux-x86_64-3.4/netsnmp/getnext.o build/temp.linux-x86_64-3.4/netsnmp/walk.o build/temp.linux-x86_64-3.4/netsnmp/extra.o build/temp.linux-x86_64-3.4/netsnmp/_api.o -L/Build/net-snmp-5.7.3/agent/.libs -L/Build/net-snmp-5.7.3/snmplib/.libs -lnetsnmp -lcrypto -lm -o build/lib.linux-x86_64-3.4/netsnmp/_api.cpython-34m.so
+copying build/lib.linux-x86_64-3.4/netsnmp/_api.cpython-34m.so -> netsnmp
+
+$ ldd netsnmp/_api.cpython-34m.so 
+    linux-vdso.so.1 (0x00007ffcdc1f5000)
+    libnetsnmp.so.30 => /Build/net-snmp-5.7.3/snmplib/.libs/libnetsnmp.so.30 (0x00007f9eca7cf000)
+    libcrypto.so.1.0.0 => /usr/lib/x86_64-linux-gnu/libcrypto.so.1.0.0 (0x00007f9eca3d4000)
+    libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f9eca0d2000)
+    libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f9ec9eb5000)
+    libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9ec9b0c000)
+    libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f9ec9907000)
+    /lib64/ld-linux-x86-64.so.2 (0x000055e727849000)
+```
+
+
+
 Test netsnmp-py3 functionality:
 
 ```
-$ python3 setup.py --basedir=/Build/net-snmp-5.7.3 build_ext -i && ./test_api.py .1.3.6.1.2.1.1.1.0
+$ ./test_api.py
 running build_ext
 copying build/lib.linux-x86_64-3.4/netsnmp/api.cpython-34m.so -> netsnmp
 SNMP GET on ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
