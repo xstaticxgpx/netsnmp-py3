@@ -1,7 +1,7 @@
 # netsnmp-py3
 Python3 NET-SNMP Bindings (C Extension)
 
-Example usage: `python3 setup.py build_ext -i && ./test_api.py .1.3.6.1.2.1.1.1.0`
+Example usage: `python3 setup.py build_ext -i && ./test_api.py`
 
 Currently only supports get, getnext, and walk for now
 
