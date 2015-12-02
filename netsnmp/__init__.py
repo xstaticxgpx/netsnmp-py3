@@ -25,7 +25,7 @@ class SNMPVarbind(object):
         self.request  = request
         # Response attributes
         self.response = None
-        self.type     = None
+        self.typestr  = None
         self.oid      = None
 
 class SNMPSession():

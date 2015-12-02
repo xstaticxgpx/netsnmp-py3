@@ -124,7 +124,7 @@ walk(PyObject *self, PyObject *args)
                                     if (responseiter == 0) {
                                         // if the first response is next sibling, set NOSUCHINSTANCE
                                         __get_type_str(SNMP_NOSUCHINSTANCE, type_str);
-                                        __py_attr_set_string(varbind, "type", type_str, strlen(type_str));
+                                        __py_attr_set_string(varbind, "typestr", type_str, strlen(type_str));
                                     }
                                     //stop walking
                                     running = 0;
@@ -174,7 +174,7 @@ walk(PyObject *self, PyObject *args)
                                     __py_attr_set_string(varbind, "response", str_buf, len);
                 
                                     __get_type_str(var->type, type_str);
-                                    __py_attr_set_string(varbind, "type", type_str, strlen(type_str));
+                                    __py_attr_set_string(varbind, "typestr", type_str, strlen(type_str));
                 
                                     __py_attr_set_string(varbind, "oid", mib_buf, mib_buf_len);
                                 }

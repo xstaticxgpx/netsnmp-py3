@@ -9,17 +9,18 @@ if __name__ == '__main__':
     vars      = SNMPVarlist()
     [vars.append(SNMPVarbind(oid)) for oid in oids]
     ips = ['archt01', 'archt02', 'archt03', 'archt04', 'archt05']
-    ips6 = ['fe80::c67:bb2b:dbb4:8c63', 'fe80::ce0b:fd3a:ac06:26a9', 'fe80::b97d:dda5:1b0e:dd2e', 'fe80::44ee:1be2:784b:84ed', 'fe80::ba63:79c3:cfdd:599d']
-#    ips = ['archt06']
+    ips6 = ['udp6:[fe80::c67:bb2b:dbb4:8c63]', 'udp6:[fe80::ce0b:fd3a:ac06:26a9]', 'udp6:[fe80::b97d:dda5:1b0e:dd2e]', 'udp6:[fe80::44ee:1be2:784b:84ed]', 'udp6:[fe80::ba63:79c3:cfdd:599d]']
+    print(ips6)
+    ips = ['archt01']
 
     start = time.perf_counter()
     print('SNMP GET on %s' % oids)
-    for host in ips6:
+    for host in ips:
 
         try:
-            ss, vars = snmp(None, vars, action='get', community='public', peer="udp6:["+host+"]")
+            ss, vars = snmp(None, vars, action='get', community='public', peer=host)
             for var in vars:
-                print("%s = %s: %s" % (var.oid, var.type, var.response))
+                print("%s = %s: %s" % (var.oid, var.typestr, var.response))
         except SNMPError as e:
             print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
             continue
@@ -34,7 +35,7 @@ if __name__ == '__main__':
         try:
             ss, vars = snmp(None, vars, action='getnext', community='public', peer=host)
             for var in vars:
-                print("%s = %s: %s" % (var.oid, var.type, var.response))
+                print("%s = %s: %s" % (var.oid, var.typestr, var.response))
         except SNMPError as e:
             print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
             continue
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     try:
         ss, vars = snmp(None, vars, action='walk', community='public', peer=ips[0])
         for var in vars:
-            print("%s = %s: %s" % (var.oid, var.type, var.response))
+            print("%s = %s: %s" % (var.oid, var.typestr, var.response))
         ss.close()
     except SNMPError as e:
         print("%s = ERROR: %s" % (sys.argv[1], str(e).strip()))
