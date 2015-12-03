@@ -41,7 +41,8 @@ MAX_WORKERS=2
 MAX_PER_WORKER=4096
 
 # Number of ZMQ PULL processes to spawn
-ZMQ_PROCESSORS=4
+ZMQ_PROCESSORS = 4
+zmq_processors = []
 
 # Time to pause for ZMQ initialization (Seconds)
 ZMQ_PAUSE=0.1
@@ -126,7 +127,7 @@ def ZMQProcessor(success, timeout):
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
 
 # Messaging Pipeline
-def ZMQStreamer():
+def ZMQStreamer(running):
     """
     Proxy ZeroMQ via pipeline (zmq.STREAMER)
     """
@@ -140,6 +141,8 @@ def ZMQStreamer():
     outgoing.bind(ZMQ_OUT)
 
     log.debug('Starting up...')
+    with running.get_lock():
+        running.value = 1
     zmq.device(zmq.STREAMER, incoming, outgoing)
 
 if __name__ == '__main__':
@@ -213,7 +216,7 @@ ROWNUM <= 1000000\
     # append host tuple with inline ipv6 logic
     [hosts.append(
         (host, community, oidl)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200000]#, 'archt06')]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05', 'archt06')]
     #select.close()
     #dbh.close()
     total = len(hosts)
@@ -221,10 +224,16 @@ ROWNUM <= 1000000\
     log.info('got %d hosts from DB in %.3fms' % (total, (end-start)*1000))
 
     try:
+        ## Global multiprocessing-safe counters
+        success = mp.Value('i', 0)
+        timeout = mp.Value('i', 0)
+        ## ZMQStreamer switch (set to 1 after successful initialization)
+        zmq_streamer_running = mp.Value('i', 0)
 
 
         # Start ZeroMQ Streamer
         zmq_streamer = mp.Process(target=ZMQStreamer,
+                                   args=(zmq_streamer_running,),
                                    name='ZMQStreamer',
                                    daemon=True)
 
@@ -232,13 +241,10 @@ ROWNUM <= 1000000\
 
         # Let the ZMQ sockets start up
         time.sleep(ZMQ_PAUSE)
-
-        ## Global multiprocessing-safe counters
-        success = mp.Value('i', 0)
-        timeout = mp.Value('i', 0)
+        if not zmq_streamer_running.value == 1:
+            raise RuntimeError("ZMQStreamer failed to initialize")
 
         # Spin up ZeroMQ Processors
-        zmq_processors = []
         for i in range(ZMQ_PROCESSORS):
             zmq_processors.append(
                 mp.Process(target=ZMQProcessor,
@@ -307,7 +313,13 @@ ROWNUM <= 1000000\
                 if force_reloop:
                     break
 
-    finally:
+        # Finally, raise successful completion
+        raise SystemExit
+
+    except RuntimeError as e:
+        log.critical("%s", e)
+
+    except SystemExit:
         end = time.perf_counter()
         elapsed = end-start
         log.debug('Polling completed in %.3fs' % elapsed)
@@ -338,5 +350,6 @@ ROWNUM <= 1000000\
         _elapsed = _end-_start
         log.info('total time taken %.3fs' % _elapsed)
 
+    finally:
         # Ensure logging is flushed
         log_queue.stop()
