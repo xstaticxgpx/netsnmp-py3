@@ -29,6 +29,10 @@ else:
 # For _api.h references
 incdirs.append('./netsnmp')
 
+# Asynchronous IPC
+libs.append('zmq')
+libs.append('czmq')
+
 setup(
     name="netsnmp", version="1.0a1",
     description = 'Python3 NET-SNMP Bindings',
@@ -40,6 +44,7 @@ setup(
                   "netsnmp/get.c",
                   "netsnmp/getnext.c",
                   "netsnmp/walk.c",
+                  "netsnmp/get_async.c",
                   "netsnmp/extra.c",
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,
