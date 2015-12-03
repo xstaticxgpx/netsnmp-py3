@@ -45,7 +45,7 @@ setup(
                   "netsnmp/getnext.c",
                   "netsnmp/walk.c",
                   "netsnmp/get_async.c",
-                  "netsnmp/extra.c",
+                  "netsnmp/interface.c",
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,
                  include_dirs=incdirs,
