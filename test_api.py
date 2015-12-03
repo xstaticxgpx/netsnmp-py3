@@ -10,8 +10,6 @@ if __name__ == '__main__':
     [vars.append(SNMPVarbind(oid)) for oid in oids]
     ips = ['archt01', 'archt02', 'archt03', 'archt04', 'archt05']
     ips6 = ['udp6:[fe80::c67:bb2b:dbb4:8c63]', 'udp6:[fe80::ce0b:fd3a:ac06:26a9]', 'udp6:[fe80::b97d:dda5:1b0e:dd2e]', 'udp6:[fe80::44ee:1be2:784b:84ed]', 'udp6:[fe80::ba63:79c3:cfdd:599d]']
-    print(ips6)
-    ips = ['archt01']
 
     start = time.perf_counter()
     print('SNMP GET on %s' % oids)

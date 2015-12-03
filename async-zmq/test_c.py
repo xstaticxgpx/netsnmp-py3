@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from netsnmp.api import get_async as snmpget_async
-import cx_Oracle
+#import cx_Oracle
 import zmq
 import redis, hiredis
 import logging, logging.handlers
@@ -37,7 +37,7 @@ DB = {
 # limitation lies somewhere between 49112 and 49116(??) - getting EPERM (1)... kernel dropping?
 #http://comments.gmane.org/gmane.comp.security.firewalls.netfilter.devel/29993
 # 8 * 4096 = 32768 max requests at any given time
-MAX_WORKERS=8
+MAX_WORKERS=2
 MAX_PER_WORKER=4096
 
 # Number of ZMQ PULL processes to spawn
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     #]
 
     db = DB['apportal']
-    dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
+    #dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s.%(msecs)03dZ [%(processName)s/%(levelname)s] %(message)s',
@@ -176,10 +176,10 @@ IP NOT IN ('null', 'NOSUCHOBJECT') AND \
 LAST_POLL >= SYSDATE - INTERVAL '5' DAY AND \
 ROWNUM <= 1000000\
 '''
-    community='comm'
+    community='public'
 
-    select = dbh.cursor()
-    select.arraysize = 4096
+    #select = dbh.cursor()
+    #select.arraysize = 4096
     
     _oids = {
             'ap.model': '1.3.6.1.2.1.1.1.0',
@@ -212,10 +212,10 @@ ROWNUM <= 1000000\
     start = time.perf_counter()
     # append host tuple with inline ipv6 logic
     [hosts.append(
-        ("udp6:["+host[0]+"]" if host[0].startswith(':', 4, 5) else host[0], community, oidl)
-    ) for host in select.execute(query)]
-    select.close()
-    dbh.close()
+        (host, community, oidl)
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200000]#, 'archt06')]
+    #select.close()
+    #dbh.close()
     total = len(hosts)
     end = time.perf_counter()
     log.info('got %d hosts from DB in %.3fms' % (total, (end-start)*1000))

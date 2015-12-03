@@ -143,8 +143,8 @@ callback(int operation, netsnmp_session *ss, int reqid,
     if (_debug_level) printf("### callback reqid:%d\n", reqid);
     if (_debug_level) printf("### callback host:%s\n", ss->peername);
 
-    zmsg_addstr(zmqmsg, "%d", operation);
-    zmsg_addstr(zmqmsg, "%s", ss->peername);
+    zmsg_addstrf(zmqmsg, "%d", operation);
+    zmsg_addstrf(zmqmsg, "%s", ss->peername);
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
         //var_list = PyList_New(0);
         for (vars = pdu->variables; vars; vars = vars->next_variable, out_len = 0) {
@@ -158,7 +158,7 @@ callback(int operation, netsnmp_session *ss, int reqid,
 
             // Append Python tuple (type, oid, response) to list
             //PyList_Append(var_list, Py_BuildValue("(iss)", vars->type, mib_bufp, str_bufp));
-            zmsg_addstr(zmqmsg, "%s=%s", mib_bufp, str_bufp);
+            zmsg_addstrf(zmqmsg, "%s=%s", mib_bufp, str_bufp);
         }
     }
     //PyObject_CallFunction(_cb, "iiisO", proc_id, operation, reqid, ss->peername, var_list ? var_list : Py_BuildValue("i", 0));
@@ -185,6 +185,8 @@ get_async(PyObject *self, PyObject *args)
   int retries;
   int ZMQ_HWM;
   char *ZMQ_IN;
+  int rc;
+  int linger = -1;
   //PyObject *py_callback;
   int fds = 0, block = 1;
   netsnmp_large_fd_set lfdset;
@@ -198,17 +200,12 @@ get_async(PyObject *self, PyObject *args)
     }
 
     zmq_ctx = zctx_new();
+    zctx_set_linger(zmq_ctx, linger);
     zmq_push = zsocket_new(zmq_ctx, ZMQ_PUSH);
-    zsocket_set_sndhwm(zmq_push, ZMQ_HWM);
-    //zsocket_set_sndbuf(zmq_push, ZMQ_BUF);
-    //zsocket_set_linger(zmq_push, -1);
+    zmq_setsockopt(zmq_push, ZMQ_SNDHWM, &ZMQ_HWM, sizeof(&ZMQ_HWM));
 
-    //if ((zmq_connect(zmq_push, "tcp://127.0.0.1:1100")) < 0) {
-    if ((zmq_connect(zmq_push, ZMQ_IN)) < 0) {
-        PyErr_Format(PyExc_RuntimeError, "get: unable to open zeromq socket\n");
-        return;
-    }
-
+    rc = zsocket_connect(zmq_push, "%s", ZMQ_IN); assert (rc == 0);
+    if (_debug_level) printf("### %s (%d) [%s]\n", ZMQ_IN, rc, zsocket_type_str(zmq_push));
 
     //ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
     snmp_set_do_debugging(0);
@@ -232,7 +229,7 @@ get_async(PyObject *self, PyObject *args)
     host_iter = PyObject_GetIter(hosttuple);
 
     while (host_iter && (host = PyIter_Next(host_iter))) {
-
+      
       netsnmp_pdu *req;
       netsnmp_session sess, *ss;
 
@@ -311,8 +308,10 @@ get_async(PyObject *self, PyObject *args)
           snmp_timeout();
       }
     }
+    // Close SNMP sockets
     snmp_close_sessions();
-    zsocket_destroy(zmq_ctx, zmq_push);
+    // Close ZeroMQ context
+    zctx_destroy(&zmq_ctx);
     return Py_BuildValue("i", 1);
 }
 
