@@ -8,6 +8,10 @@
 #include <zmq.h>
 #include <czmq.h>
 
+#if CZMQ_VERSION_MAJOR < 3
+#define zmsg_addstrf zmsg_addstr
+#endif
+
 /* Global counters */
 static int active_hosts = 0;
 /* Global ZeroMQ pointers */
