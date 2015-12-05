@@ -14,6 +14,7 @@
 
 /* Global counters */
 static int active_hosts = 0;
+int _debug_level = 0;
 /* Global ZeroMQ pointers */
 zctx_t *zmq_ctx;
 void *zmq_push;
@@ -33,13 +34,17 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
 
     //_cb = (PyObject *)magic;
     //pid_t proc_id = getpid();
+    u_char *_devtype = (u_char *)magic;
 
-    if (_debug_level) printf("### callback operation:%d\n", operation);
-    if (_debug_level) printf("### callback reqid:%d\n", reqid);
-    if (_debug_level) printf("### callback host:%s\n", ss->peername);
+    if (_debug_level) {
+        printf("### callback op:%d", operation);
+        printf(" reqid:%d", reqid);
+        printf(" host:%s magic:%s\n", ss->peername, _devtype);
+    }
 
     zmsg_addstrf(zmqmsg, "%d", operation);
     zmsg_addstrf(zmqmsg, "%s", ss->peername);
+    zmsg_addstrf(zmqmsg, "%s", _devtype);
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
         //var_list = PyList_New(0);
         for (vars = pdu->variables; vars; vars = vars->next_variable, out_len = 0) {
@@ -71,7 +76,7 @@ get_async(PyObject *self, PyObject *args)
   PyObject *host;
   PyObject *oids;
   PyObject *oids_iter;
-  netsnmp_variable_list *var;
+  PyObject *var;
   size_t oid_arr_len;
   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
   int timeout;
@@ -132,7 +137,8 @@ get_async(PyObject *self, PyObject *args)
       }
       char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
       u_char *comm = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
-      oids = PyTuple_GetItem(host, 2);
+      u_char *devtype = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
+      oids = PyTuple_GetItem(host, 3);
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
       rc = asprintf(&snmp_send_err, "[%d] snmp_send %s", proc_id, name);
@@ -140,7 +146,7 @@ get_async(PyObject *self, PyObject *args)
       snmp_sess_init(&sess);
 
       req = snmp_pdu_create(SNMP_MSG_GET);    /* build PDU */
-      for ((oids_iter = PyObject_GetIter(oids)); (var = (netsnmp_variable_list *)PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
+      for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
           snmp_parse_oid(PyUnicode_AsUTF8((PyObject *)var), oid_arr_ptr, &oid_arr_len);
           snmp_add_null_var(req, oid_arr_ptr, oid_arr_len);
           Py_DECREF(var);
@@ -154,7 +160,7 @@ get_async(PyObject *self, PyObject *args)
       sess.community     = comm;
       sess.community_len = strlen((char *)sess.community);
       sess.callback      = (netsnmp_callback)get_async_cb;
-      //sess.callback_magic= (void *)py_callback;
+      sess.callback_magic= (void *)devtype;
 
       if (!(ss = snmp_open(&sess))) {
         snmp_perror(snmp_open_err);

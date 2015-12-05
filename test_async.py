@@ -54,10 +54,11 @@ ZMQ_HWM=10000000
 ZMQ_IN  = "ipc:///tmp/%s_in" % cmdname
 ZMQ_OUT = "ipc:///tmp/%s_out" % cmdname
 
-# ZeroMQ Message Frame pointers ([OP, HOST, OIDS..])
+# ZeroMQ Message Frame pointers ([OP, HOST, DEVTYPE, OIDS..])
 OP=0
 HOST=1
-OIDS=2
+DEVTYPE=2
+OIDS=3
 
 ## SNMP
 
@@ -71,6 +72,8 @@ def ZMQProcessor(success, timeout):
     """
     Intake work via ZeroMQ socket and queue for processing after _sentinel is signaled
     """
+
+    _type_count = {}
 
     # Per-processor queue
     q = queue.Queue()
@@ -104,10 +107,18 @@ def ZMQProcessor(success, timeout):
         if response[OP] == '1':
             with success.get_lock():
                 success.value+=1
+
+            try:
+                _type_count[response[DEVTYPE]]+=1
+            except KeyError:
+                # Need to define
+                _type_count[response[DEVTYPE]]=1
+
             # Parse OIDs
             vars = [var.split('=', maxsplit=1) for var in response[OIDS:]]
             vars = {oid: value for (oid, value) in vars}
             try: 
+                #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
                 #             vars)
                 i+=1
@@ -125,6 +136,7 @@ def ZMQProcessor(success, timeout):
     end = time.perf_counter()
     elapsed = end-start
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
+    log.debug('%s', _type_count)
 
 # Messaging Pipeline
 def ZMQStreamer(running):
@@ -215,7 +227,7 @@ ROWNUM <= 1000000\
     start = time.perf_counter()
     # append host tuple with inline ipv6 logic
     [hosts.append(
-        (host, community, oidl)
+        (host, community, host+'type', oidl)
     ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
     #select.close()
     #dbh.close()
