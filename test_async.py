@@ -216,7 +216,7 @@ ROWNUM <= 1000000\
     # append host tuple with inline ipv6 logic
     [hosts.append(
         (host, community, oidl)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05', 'archt06')]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
     #select.close()
     #dbh.close()
     total = len(hosts)

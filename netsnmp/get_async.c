@@ -19,7 +19,7 @@ zctx_t *zmq_ctx;
 void *zmq_push;
 
 netsnmp_callback *
-async_callback(int operation, netsnmp_session *ss, int reqid,
+get_async_cb(int operation, netsnmp_session *ss, int reqid,
                 netsnmp_pdu *pdu, void *magic)
 {
     netsnmp_variable_list *vars;
@@ -153,7 +153,7 @@ get_async(PyObject *self, PyObject *args)
       sess.retries       = retries;
       sess.community     = comm;
       sess.community_len = strlen((char *)sess.community);
-      sess.callback      = (netsnmp_callback)async_callback;
+      sess.callback      = (netsnmp_callback)get_async_cb;
       //sess.callback_magic= (void *)py_callback;
 
       if (!(ss = snmp_open(&sess))) {
