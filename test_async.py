@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import netsnmp
 from netsnmp._api import get_async
 #import cx_Oracle
 import zmq
@@ -91,7 +92,7 @@ def ZMQProcessor(success, timeout):
     # Pull via ZMQ and Queue
     while True:
         response = incoming.recv_multipart()
-        if response[0] == b'_sentinel':
+        if response[OP] == b'_sentinel':
             log.debug('Shutting down ZMQ_PULL socket...')
             incoming.close()
             break

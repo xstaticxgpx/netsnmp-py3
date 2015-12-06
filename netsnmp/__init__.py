@@ -18,7 +18,6 @@ SNMP_ERR = [
 class SNMPVarlist(list):
     pass
 
-
 class SNMPVarbind(object):
     def __init__(self, request=None):
         # Request
@@ -77,7 +76,4 @@ def snmp(session, var, action='get', timeout=0.5, community=None, peer=None):
     elif action == 'walk':
         ret = session.walk(vars)
 
-    if ret:
-        return (session, vars)
-    else:
-        return (session, vars)
+    return (session, vars)
