@@ -70,7 +70,7 @@ SNMP_TIMEOUT=250
 SNMP_TIMEOUT_DELTA=MAX_WORKERS
 
 # Messaging Intake/Processing
-def ZMQProcessor(success, timeout):
+def ZMQProcessor(success, oidcount, timeout):
     """
     Intake work via ZeroMQ socket and queue for processing after _sentinel is signaled
     """
@@ -86,7 +86,7 @@ def ZMQProcessor(success, timeout):
     incoming.connect(ZMQ_OUT)
 
     # redis pipeline
-    #_redis = redis.Redis(host='127.0.0.1').pipeline()
+    _redis = redis.Redis(host='127.0.0.1').pipeline()
 
     log.debug('Starting up...')
 
@@ -117,24 +117,26 @@ def ZMQProcessor(success, timeout):
                 _type_count[response[DEVTYPE]]=1
 
             # Parse OIDs
-            vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
-            log.debug(vars)
+            varlen, vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
+            with oidcount.get_lock():
+                oidcount.value+=varlen
+            #log.debug(vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
-                #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
-                #             vars)
+                _redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
+                             vars)
                 i+=1
             except redis.exceptions.RedisError as e:
                 log.debug('redis exception: %s' % (str(e).strip()))
                 continue
             # Flush redis pipeline periodically
             if i > 4095:
-                #_redis.execute()
+                _redis.execute()
                 i=0
         elif response[OP] == '2':
             with timeout.get_lock():
                 timeout.value+=1
-    #_redis.execute()
+    _redis.execute()
     end = time.perf_counter()
     elapsed = end-start
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
@@ -231,8 +233,8 @@ ROWNUM <= 1000000\
     [hosts.append(
         SNMPClassify(host, community)
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')]
-    log.debug(hosts)
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20000]
+    #log.debug(hosts)
     #select.close()
     #dbh.close()
     total = len(hosts)
@@ -242,6 +244,7 @@ ROWNUM <= 1000000\
     try:
         ## Global multiprocessing-safe counters
         success = mp.Value('i', 0)
+        oidcount = mp.Value('i', 0)
         timeout = mp.Value('i', 0)
         ## ZMQStreamer switch (set to 1 after successful initialization)
         zmq_streamer_running = mp.Value('i', 0)
@@ -264,7 +267,7 @@ ROWNUM <= 1000000\
         for i in range(ZMQ_PROCESSORS):
             zmq_processors.append(
                 mp.Process(target=ZMQProcessor,
-                            args=(success, timeout),
+                            args=(success, oidcount, timeout),
                             name='ZMQProc-%03d' % (i+1),
                             daemon=True)
             )
@@ -283,9 +286,11 @@ ROWNUM <= 1000000\
         start = time.perf_counter()
         while hosts or workers:
             pids = []
+            remaining = total-i
             if hosts and len(workers) < MAX_WORKERS:
                 _timeout = SNMP_TIMEOUT+random.randint(p%2, SNMP_TIMEOUT_DELTA)
-                log.debug('Defining process for range %d:%d (%dms)' % (i, i+MAX_PER_WORKER, _timeout))
+                _upper = i+MAX_PER_WORKER if remaining > MAX_PER_WORKER else i+remaining
+                log.debug('Defining process for range %d:%d (%dms)' % (i, _upper, _timeout))
 
                 # Define process(es) which call get_async C function
                 # get_async([(str hostname, str community, [str oid,..])..], int timeout_ms, int retries, int ZMQ_HWM, str ZMQ_IN)
@@ -357,9 +362,9 @@ ROWNUM <= 1000000\
                 zmq_processors.remove(zmq_processor)
 
         log.info('from %d total hosts got %d timeouts (%.1f%%)' % (total, timeout.value, ((timeout.value/total)*100)))
-        log.info('got %d oid responses from %d hosts' % ((success.value*len(oids)), success.value))
+        log.info('got %d oid responses from %d hosts' % (oidcount.value, success.value))
         log.info('lost %d hosts' % (total-(success.value+timeout.value)))
-        log.info('%.2f oids/sec' % ((success.value*len(oidl))/elapsed))
+        log.info('%.2f oids/sec' % (oidcount.value/elapsed))
         log.info('%.2f reqs/sec' % ((success.value+timeout.value)/elapsed))
 
         _end = time.time()
