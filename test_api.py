@@ -16,13 +16,15 @@ if __name__ == '__main__':
     for host in ips:
 
         try:
-            ss, vars = snmp(None, vars, action='get', community='public', peer=host)
-            for var in vars:
-                print("%s = %s: %s" % (var.oid, var.typestr, var.response))
+            with SNMPSession(host, 'public') as ss:
+                ss.get(vars)
+            #ss, vars = snmp(None, vars, action='get', community='public', peer=host)
+                for var in vars:
+                    print("%s = %s: %s" % (var.oid, var.typestr, var.response))
         except SNMPError as e:
             print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
             continue
-        ss.close()
+#        ss.close()
 
     print("%02fms" % ((time.perf_counter()-start)*1000))
 
