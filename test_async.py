@@ -2,6 +2,7 @@
 
 import netsnmp
 from netsnmp._api import get_async
+from netsnmp._dev import *
 #import cx_Oracle
 import zmq
 import redis, hiredis
@@ -116,8 +117,8 @@ def ZMQProcessor(success, timeout):
                 _type_count[response[DEVTYPE]]=1
 
             # Parse OIDs
-            vars = [var.split('=', maxsplit=1) for var in response[OIDS:]]
-            vars = {oid: value for (oid, value) in vars}
+            vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
+            log.debug(vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -215,8 +216,8 @@ ROWNUM <= 1000000\
 #            'cm.software': '1.3.6.1.4.1.15768.6.4.1.1.1.5.1',
     }
     oids = {
-            'ap.model': '1.3.6.1.2.1.1.1.0',
-            'ap.mode' : '1.3.6.1.2.1.1.3.0',
+            'sysDescr': '1.3.6.1.2.1.1.1.0',
+            'upTime' : '1.3.6.1.2.1.1.3.0',
     }
 
     hosts = []
@@ -228,8 +229,10 @@ ROWNUM <= 1000000\
     start = time.perf_counter()
     # append host tuple with inline ipv6 logic
     [hosts.append(
-        (host, community, host+'type', oidl)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
+        SNMPClassify(host, community)
+        #(host, community, 'archt', SNMPDevice_archt)
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')]
+    log.debug(hosts)
     #select.close()
     #dbh.close()
     total = len(hosts)

@@ -74,7 +74,6 @@ get_async(PyObject *self, PyObject *args)
   PyObject *hosttuple;
   PyObject *host_iter;
   PyObject *host;
-  PyObject *oids;
   PyObject *oids_iter;
   PyObject *var;
   size_t oid_arr_len;
@@ -138,7 +137,7 @@ get_async(PyObject *self, PyObject *args)
       char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
       u_char *comm = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
       u_char *devtype = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
-      oids = PyTuple_GetItem(host, 3);
+      PyObject *oids = PyObject_GetAttrString(PyTuple_GetItem(host, 3), "oids");
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
       rc = asprintf(&snmp_send_err, "[%d] snmp_send %s", proc_id, name);
