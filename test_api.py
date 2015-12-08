@@ -42,7 +42,7 @@ if __name__ == '__main__':
                 except:
                     pass
     
-                print("error", str(e))
+                print("[%s]" % host, repr(e))
                 continue
     
         print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
@@ -67,7 +67,7 @@ if __name__ == '__main__':
                 except:
                     pass
     
-                print("error", str(e))
+                print("[%s]" % host, repr(e))
                 continue
     
         print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 except:
                     pass
     
-                print("error", str(e))
+                print("[%s]" % host, repr(e))
                 continue
     
         print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
