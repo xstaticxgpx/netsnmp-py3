@@ -85,3 +85,11 @@ SNMP WALK (load averages):
 ... 
 [('.1.3.6.1.4.1.2021.10.1.3.1', 'STRING', '"0.37"'), ('.1.3.6.1.4.1.2021.10.1.3.2', 'STRING', '"0.25"'), ('.1.3.6.1.4.1.2021.10.1.3.3', 'STRING', '"0.29"')]
 ```
+
+IPv6 support:
+```
+>>> with netsnmp.SNMPSession('udp6:[fe80::c67:bb2b:dbb4:8c63]', 'public') as ss:
+...     ss.get(['.1.3.6.1.2.1.1.1.0'])
+... 
+[('.1.3.6.1.2.1.1.1.0', 'STRING', '"Linux archt01 4.3.0-1-ck #1 SMP PREEMPT Sun Nov 15 13:24:29 EST 2015 x86_64"')]
+```
