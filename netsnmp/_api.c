@@ -11,8 +11,6 @@ static char get_docstring[] =
     "Perform SNMPGET request";
 static char getnext_docstring[] =
     "Perform SNMPGETNEXT request";
-static char walk_docstring[] =
-    "Perform SNMPWALK request";
 static char get_async_docstring[] =
     "Perform asynchronous SNMPGET requests";
 
@@ -22,7 +20,6 @@ static PyMethodDef APIMethods[] = {
     {"create_session", create_session, METH_VARARGS, create_session_docstring},
     {"get", get, METH_VARARGS, get_docstring},
     {"getnext", getnext, METH_VARARGS, getnext_docstring},
-    {"walk", walk, METH_VARARGS, walk_docstring},
     {"get_async", get_async, METH_VARARGS, get_async_docstring},
     {"close_session", close_session, METH_VARARGS, close_session_docstring},
     {NULL, NULL, 0, NULL}        /* Sentinel */

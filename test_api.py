@@ -72,20 +72,17 @@ if __name__ == '__main__':
     
         print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
         print()
-#
-#
+
     if 'walk' in sys.argv[1:]:
         oids = ['.1.3.6.1.2.1.1', '.1.3.6.1.4.1.2021.100']
         start = time.perf_counter()
-#    vars      = SNMPVarlist()
-#    [vars.append(SNMPVarbind(oid)) for oid in oids]
         print('SNMP WALK on %s' % oids)
         for host in ips[:1]:
             try:
                 _start = time.perf_counter()
                 with SNMPSession(host, 'public', debug=1) as ss:
-                    for response in ss.walk(oids):
-                        print("[%s] %s = %s: %s" % (host, response[OID], response[TYPE], response[VALUE]))
+                    # SNMPSession.walk is a generator
+                    [print("[%s] %s = %s: %s" % (host, response[OID], response[TYPE], response[VALUE])) for response in ss.walk(oids)]
     
             except SNMPError as e:
                 try:

@@ -26,7 +26,6 @@ int __get_type_str       (int type, char *str);
 PyObject *create_session (PyObject *self, PyObject *args);
 PyObject *get            (PyObject *self, PyObject *args);
 PyObject *getnext        (PyObject *self, PyObject *args);
-PyObject *walk           (PyObject *self, PyObject *args);
 PyObject *close_session  (PyObject *self, PyObject *args);
 
 /* Asynchronous implementations */
