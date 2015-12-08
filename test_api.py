@@ -14,46 +14,45 @@ if __name__ == '__main__':
     start = time.perf_counter()
     print('SNMP GET on %s' % oids)
     for host in ips:
-
         try:
             with SNMPSession(host, 'public') as ss:
-                ss.get(vars)
-            #ss, vars = snmp(None, vars, action='get', community='public', peer=host)
-                for var in vars:
-                    print("%s = %s: %s" % (var.oid, var.typestr, var.response))
+                rc, responses = ss.get(oids)
+                print(responses)
+                for oid in responses:
+                    print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[RESPONSE]))
         except SNMPError as e:
-            print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
+            print("error", str(e))
             continue
 #        ss.close()
 
     print("%02fms" % ((time.perf_counter()-start)*1000))
 
-    start = time.perf_counter()
-    print('SNMP GETNEXT on %s' % oids)
-    for host in ips:
-
-        try:
-            ss, vars = snmp(None, vars, action='getnext', community='public', peer=host)
-            for var in vars:
-                print("%s = %s: %s" % (var.oid, var.typestr, var.response))
-        except SNMPError as e:
-            print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
-            continue
-        ss.close()
-    print("%02fms" % ((time.perf_counter()-start)*1000))
-
-
-    start = time.perf_counter()
-    oids = ['.1.3.6.1.2.1.1', '1.3.6.1.2.1.2']
-    vars      = SNMPVarlist()
-    [vars.append(SNMPVarbind(oid)) for oid in oids]
-    print('SNMP WALK on %s' % oids)
-    try:
-        ss, vars = snmp(None, vars, action='walk', community='public', peer=ips[0])
-        for var in vars:
-            print("%s = %s: %s" % (var.oid, var.typestr, var.response))
-        ss.close()
-    except SNMPError as e:
-        print("%s = ERROR: %s" % (sys.argv[1], str(e).strip()))
-
-    print("%02fms" % ((time.perf_counter()-start)*1000))
+#    start = time.perf_counter()
+#    print('SNMP GETNEXT on %s' % oids)
+#    for host in ips:
+#
+#        try:
+#            ss, vars = snmp(None, vars, action='getnext', community='public', peer=host)
+#            for var in vars:
+#                print("%s = %s: %s" % (var.oid, var.typestr, var.response))
+#        except SNMPError as e:
+#            print("%s = ERROR: %s" % (vars[0].request, str(e).strip()))
+#            continue
+#        ss.close()
+#    print("%02fms" % ((time.perf_counter()-start)*1000))
+#
+#
+#    start = time.perf_counter()
+#    oids = ['.1.3.6.1.2.1.1', '1.3.6.1.2.1.2']
+#    vars      = SNMPVarlist()
+#    [vars.append(SNMPVarbind(oid)) for oid in oids]
+#    print('SNMP WALK on %s' % oids)
+#    try:
+#        ss, vars = snmp(None, vars, action='walk', community='public', peer=ips[0])
+#        for var in vars:
+#            print("%s = %s: %s" % (var.oid, var.typestr, var.response))
+#        ss.close()
+#    except SNMPError as e:
+#        print("%s = ERROR: %s" % (sys.argv[1], str(e).strip()))
+#
+#    print("%02fms" % ((time.perf_counter()-start)*1000))

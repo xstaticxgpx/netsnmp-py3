@@ -16,6 +16,11 @@ SNMP_ERR = [
             'ERROR',
 ]
 
+# Response tuple pointers
+OID=0
+TYPE=1
+RESPONSE=2
+
 class SNMPVarlist(list):
     pass
 
@@ -28,7 +33,19 @@ class SNMPVarbind(object):
         self.typestr  = None
         self.oid      = None
 
-class SNMPSession():
+    def __str__(self):
+        return self.oid
+
+class SNMPResponse(object):
+    def __init__(self):
+        self.response = None
+        self.typestr = None
+        self.oid = None
+
+    def __str__(self):
+        return self.oid
+
+class SNMPSession(object):
     """
     Session based, thread-safe interface
     """
@@ -57,12 +74,12 @@ class SNMPSession():
         return SNMPVarbind()
 
     def close(self):
-        res = netsnmp.close_session(self)
-        return res
+        return netsnmp.close_session(self)
 
     def get(self, oids):
-        res = netsnmp.get(self, oids)
-        return res
+        responses = []
+        return (netsnmp.get(self, oids, responses), responses)
+
 
     def getnext(self, varlist):
         res = netsnmp.getnext(self, varlist)
