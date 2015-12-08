@@ -34,7 +34,7 @@ get(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "OOO", &session, &oids, &responses)) {
         //snmp_sess_close(ss);
-        PyErr_Format(SNMPError, "get: unable to parse tuple\n");
+        PyErr_Format(SNMPError, "get: unable to parse argument tuple\n");
         return NULL;
     }
 

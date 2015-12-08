@@ -14,7 +14,6 @@
 
 /* Global counters */
 static int active_hosts = 0;
-int _debug_level = 0;
 /* Global ZeroMQ pointers */
 zctx_t *zmq_ctx;
 void *zmq_push;
@@ -95,6 +94,7 @@ get_async(PyObject *self, PyObject *args)
         PyErr_Format(SNMPError, "get: unable to parse args tuple\n");
         return NULL;
     }
+    _debug_level = 0;
 
     zmq_ctx = zctx_new();
     zctx_set_linger(zmq_ctx, linger);

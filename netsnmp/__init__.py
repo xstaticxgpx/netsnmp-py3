@@ -49,8 +49,8 @@ class SNMPSession(object):
     """
     Session based, thread-safe interface
     """
-    def __init__(self, peername, community, version=SNMP_VER['2c'], timeout=0.5, retries=1):
-        self.debug     = 0
+    def __init__(self, peername, community, version=SNMP_VER['2c'], timeout=0.5, retries=1, debug=0):
+        self.debug     = debug # 1 for partial debugging, 2 for full NETSNMP debugging
         self.version   = version
         self.timeout   = int(timeout*1000000)
         self.retries   = retries
@@ -80,10 +80,9 @@ class SNMPSession(object):
         responses = []
         return (netsnmp.get(self, oids, responses), responses)
 
-
-    def getnext(self, varlist):
-        res = netsnmp.getnext(self, varlist)
-        return res
+    def getnext(self, oids):
+        responses = []
+        return (netsnmp.getnext(self, oids, responses), responses)
 
     def walk(self, varlist):
         res = netsnmp.walk(self, varlist)

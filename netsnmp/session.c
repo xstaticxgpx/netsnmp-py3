@@ -21,7 +21,7 @@ create_session(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    snmp_set_do_debugging(_debug_level);
+    snmp_set_do_debugging(_debug_level == 2 ? 1 : 0);
     snmp_disable_stderrlog();
     snmp_set_quick_print(1);
     set_configuration_directory("/dev/null");
@@ -51,6 +51,7 @@ create_session(PyObject *self, PyObject *args)
         PyErr_Format(SNMPError, "Couldn't open SNMP session\n");
         return NULL;
     }
+    if (_debug_level) printf("### created session at %p\n", ss);
     return PyLong_FromVoidPtr((void *)ss);
 }
 
@@ -66,6 +67,7 @@ close_session(PyObject *self, PyObject *args)
     }
 
     ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
+    if (_debug_level) printf("### closing session at %p\n", ss);
     snmp_sess_close(ss);
 
     return Py_BuildValue("i", 1);
