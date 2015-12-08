@@ -22,7 +22,7 @@ $ make
 ..
 ```
 
-Build extension and check LDD for library linking, configure ld.so.conf if nescessary:
+Build the netsnmp C extension and check LDD for proper library linking, configure ld.so.conf if nescessary:
 ```
 $ python3 setup.py --basedir=/Build/net-snmp-5.7.3 build_ext -i
 running build_ext
@@ -81,7 +81,7 @@ SNMP GETNEXT:
 SNMP WALK (load averages):
 ```
 >>> with netsnmp.SNMPSession('archt01', 'public') as ss:
->>>     [response for response in ss.walk(['.1.3.6.1.4.1.2021.10.1.3'])]
+...     [response for response in ss.walk(['.1.3.6.1.4.1.2021.10.1.3'])]
 ... 
 [('.1.3.6.1.4.1.2021.10.1.3.1', 'STRING', '"0.37"'), ('.1.3.6.1.4.1.2021.10.1.3.2', 'STRING', '"0.25"'), ('.1.3.6.1.4.1.2021.10.1.3.3', 'STRING', '"0.29"')]
 ```
