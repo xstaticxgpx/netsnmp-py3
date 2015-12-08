@@ -15,7 +15,7 @@ if __name__ == '__main__':
         [sys.argv.append(op) for op in ('get', 'getnext', 'walk')]
 
     if 'get' in sys.argv[1:]:
-        oids      = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
+        oids = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
         start = time.perf_counter()
         print('SNMP GET on %s' % oids)
         for host in ips:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
             except SNMPError as e:
                 # This would ensure session is closed incase context was not used
                 try:
-                    if ss.alive:
+                    if ss.is_alive():
                         ss.close()
                 except:
                     pass
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         print()
 
     if 'getnext' in sys.argv[1:]:
-        oids      = ['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
+        oids = ['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
         start = time.perf_counter()
         print('SNMP GETNEXT on %s' % oids)
         for host in ips:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     
             except SNMPError as e:
                 try:
-                    if ss.alive:
+                    if ss.is_alive():
                         ss.close()
                 except:
                     pass
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     
             except SNMPError as e:
                 try:
-                    if ss.alive:
+                    if ss.is_alive():
                         ss.close()
                 except:
                     pass

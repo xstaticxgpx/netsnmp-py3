@@ -25,7 +25,6 @@ SNMP WALK (load averages)
     ... 
     [('.1.3.6.1.4.1.2021.10.1.3.1', 'STRING', '"0.37"'), ('.1.3.6.1.4.1.2021.10.1.3.2', 'STRING', '"0.25"'), ('.1.3.6.1.4.1.2021.10.1.3.3', 'STRING', '"0.29"')]
 
-
 """
 
 #import netsnmp._api as netsnmp
@@ -60,13 +59,10 @@ def snmp_compare_oid(oid1, oid2):
     Return True if oid2 outside of oid1 tree
     Used by SNMPSession.walk
     """
-    oid1_split = []
-    [oid1_split.append(i) for i in oid1.split('.') if i] # pylint: disable=expression-not-assigned
-    oid1_len = len(oid1_split)
-    oid1_idx = oid1_len-1
+    oid1_split = [i for i in oid1.split('.') if i]
+    oid1_idx = len(oid1_split)-1
 
-    oid2_split = []
-    [oid2_split.append(i) for i in oid2.split('.') if i] # pylint: disable=expression-not-assigned
+    oid2_split = [i for i in oid2.split('.') if i]
 
     if oid2_split[oid1_idx] > oid1_split[oid1_idx]:
         return True
@@ -79,14 +75,14 @@ class SNMPSession(object):
     def __init__(self, peername, community, version=SNMP_VER['2c'], timeout=0.5, retries=1, debug=0): # pylint: disable=line-too-long
         self.debug = debug # 1 for partial debugging, 2 for full NETSNMP debugging
         self.version = version
-        self.timeout = int(timeout*1000000) # milliseconds converted to... microsec?
+        self.timeout = int(timeout*1000000) # seconds converted to microseconds
         self.retries = retries
         self.peername = peername
         self.community = community
         # Define session
         self.sess_ptr = netsnmp.create_session(self.version, self.timeout, self.retries,
                                                self.community, self.peername, self.debug)
-        self.alive = True
+        self._alive = True
 
     def __enter__(self):
         """
@@ -102,7 +98,12 @@ class SNMPSession(object):
         Close session (clear file descriptors)
         """
         if netsnmp.close_session(self):
-            self.alive = False
+            self._alive = False
+
+    def is_alive(self):
+        if self._alive:
+            return True
+        return False
 
     def get(self, oids):
         """
