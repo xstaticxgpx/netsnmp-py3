@@ -86,7 +86,7 @@ def ZMQProcessor(success, oidcount, timeout):
     incoming.connect(ZMQ_OUT)
 
     # redis pipeline
-    _redis = redis.Redis(host='127.0.0.1').pipeline()
+    #_redis = redis.Redis(host='127.0.0.1').pipeline()
 
     log.debug('Starting up...')
 
@@ -123,20 +123,20 @@ def ZMQProcessor(success, oidcount, timeout):
             #log.debug(vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
-                _redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
-                             vars)
+                #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
+                #             vars)
                 i+=1
             except redis.exceptions.RedisError as e:
                 log.debug('redis exception: %s' % (str(e).strip()))
                 continue
             # Flush redis pipeline periodically
             if i > 4095:
-                _redis.execute()
+                #_redis.execute()
                 i=0
         elif response[OP] == '2':
             with timeout.get_lock():
                 timeout.value+=1
-    _redis.execute()
+    #_redis.execute()
     end = time.perf_counter()
     elapsed = end-start
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
