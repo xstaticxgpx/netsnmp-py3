@@ -57,7 +57,7 @@ get(PyObject *self, PyObject *args)
                 snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
             } else {
                 snmp_free_pdu(pdu);
-                snmp_sess_close(ss);
+                //snmp_sess_close(ss);
                 PyErr_Format(SNMPError, "get: unknown object ID (%s)\n", (_oidstr ? _oidstr : "<null>"));
                 return NULL;
             }
@@ -85,7 +85,7 @@ get(PyObject *self, PyObject *args)
         snmp_sess_error(ss, &err_num, &snmp_err_num, &err_bufp);
         if (_debug_level) printf("snmp_syserr: %d\nsnmp_errnum: %d\n", err_num, -snmp_err_num);
         snmp_free_pdu(response);
-        snmp_sess_close(ss);
+        //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "%s\n", err_bufp);
         return NULL;
     } else {
@@ -127,7 +127,7 @@ get(PyObject *self, PyObject *args)
 
                 if (!(len > 0)) {
                     snmp_free_pdu(response);
-                    snmp_sess_close(ss);
+                    //snmp_sess_close(ss);
                     PyErr_Format(SNMPError, "get: null response (%s)\n", mib_buf);
                     return NULL;
                 } else {
