@@ -3,6 +3,9 @@
 #import netsnmp._api as netsnmp
 from . import _api as netsnmp
 
+class SNMPRuntimeError(netsnmp.SNMPError):
+    pass
+
 SNMP_VER = {
             '1': 0,
             '2c': 1,
@@ -19,7 +22,7 @@ SNMP_ERR = [
 # Response tuple pointers
 OID=0
 TYPE=1
-RESPONSE=2
+VALUE=2
 
 class SNMPVarlist(list):
     pass
@@ -45,6 +48,23 @@ class SNMPResponse(object):
     def __str__(self):
         return self.oid
 
+def snmp_compare_oid(oid1, oid2):
+    """
+    Return True if oid2 outside of oid1 tree
+    Used by SNMPSession.walk
+    """
+    oid1_split = []
+    [oid1_split.append(i) for i in oid1.split('.') if i]
+    oid1_len = len(oid1_split)
+    oid1_idx = oid1_len-1
+
+    oid2_split = []
+    [oid2_split.append(i) for i in oid2.split('.') if i]
+
+    if oid2_split[oid1_idx] > oid1_split[-1]:
+        return True
+    return False
+
 class SNMPSession(object):
     """
     Session based, thread-safe interface
@@ -59,6 +79,7 @@ class SNMPSession(object):
         # Define session
         self.sess_ptr  = netsnmp.create_session(self.version, self.timeout, self.retries, 
                                                 self.community, self.peername, self.debug)
+        self.alive     = True
 
     # Support context (with SNMPSession() as ss..)
     def __enter__(self):
@@ -74,19 +95,38 @@ class SNMPSession(object):
         return SNMPVarbind()
 
     def close(self):
-        return netsnmp.close_session(self)
+        if netsnmp.close_session(self):
+            self.alive = False
 
     def get(self, oids):
+        # Define list to be populated by C API get()
         responses = []
-        return (netsnmp.get(self, oids, responses), responses)
+        # netsnmp.get(SNMPSession(), oids=[oid,..], responses=[])
+        # Response information is appended as a tuple of (OID, TYPE, VALUE) to responses
+        # Return 1 on success, possibly raises SNMPError() exception
+        rc = netsnmp.get(self, oids, responses)
+        # Sanity check rc
+        if not rc:
+            raise SNMPRuntimeError("Invalid return code", rc)
+        return responses
 
     def getnext(self, oids):
         responses = []
-        return (netsnmp.getnext(self, oids, responses), responses)
+        rc = netsnmp.getnext(self, oids, responses)
+        if not rc:
+            raise SNMPRuntimeError("Invalid return code", rc)
+        return responses
 
-    def walk(self, varlist):
-        res = netsnmp.walk(self, varlist)
-        return res
+    def walk(self, oids):
+        for oid in oids:
+            next_oid = oid
+            while True:
+                response = self.getnext([next_oid,])[0]
+                if snmp_compare_oid(oid, response[OID]):
+                    break
+                next_oid = response[OID]
+                yield response
+        raise StopIteration
 
 def snmp(session, var, action='get', timeout=0.5, community=None, peer=None):
     if not session:
