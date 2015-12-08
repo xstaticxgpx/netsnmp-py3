@@ -1,14 +1,37 @@
 #!/usr/bin/env python3
 """
-Docstring
+https://github.com/xstaticxgpx/netsnmp-py3/
+
+Examples:
+
+SNMP GET
+---
+    >>> with netsnmp.SNMPSession('archt01', 'public') as ss:
+    ...     ss.get(['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0'])
+    ... 
+    [('.1.3.6.1.2.1.1.1.0', 'STRING', '"Linux archt01 4.3.0-1-ck #1 SMP PREEMPT Sun Nov 15 13:24:29 EST 2015 x86_64"'), ('.1.3.6.1.2.1.1.3.0', 'Timeticks', '1:11:36:30.56'), ('.1.3.6.1.2.1.1.5.0', 'STRING', '"archt01"')]
+
+SNMP GETNEXT
+---
+    >>> with netsnmp.SNMPSession('archt01', 'public') as ss:
+    ...     ss.getnext(['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0'])
+    ... 
+    [('.1.3.6.1.2.1.1.1.0', 'STRING', '"Linux archt01 4.3.0-1-ck #1 SMP PREEMPT Sun Nov 15 13:24:29 EST 2015 x86_64"'), ('.1.3.6.1.2.1.1.3.0', 'Timeticks', '1:11:39:35.05'), ('.1.3.6.1.2.1.1.5.0', 'STRING', '"archt01"')]
+
+SNMP WALK (load averages)
+---
+    >>> with netsnmp.SNMPSession('archt01', 'public') as ss:
+    >>>     [response for response in ss.walk(['.1.3.6.1.4.1.2021.10.1.3'])]
+    ... 
+    [('.1.3.6.1.4.1.2021.10.1.3.1', 'STRING', '"0.37"'), ('.1.3.6.1.4.1.2021.10.1.3.2', 'STRING', '"0.25"'), ('.1.3.6.1.4.1.2021.10.1.3.3', 'STRING', '"0.29"')]
+
+
 """
 
 #import netsnmp._api as netsnmp
 from . import _api as netsnmp
 
-SNMPError = netsnmp.SNMPError
-
-class SNMPRuntimeError(SNMPError): # pylint: disable=no-init
+class SNMPRuntimeError(netsnmp.SNMPError): # pylint: disable=no-init
     """
     Raised by SNMPSession methods on return code error
     """
@@ -65,8 +88,10 @@ class SNMPSession(object):
                                                self.community, self.peername, self.debug)
         self.alive = True
 
-    # Support context (with SNMPSession() as ss..)
     def __enter__(self):
+        """
+        Support context (with SNMPSession(..) as ss..)
+        """
         return self
 
     def __exit__(self, *args):
@@ -106,7 +131,7 @@ class SNMPSession(object):
 
     def walk(self, oids):
         """
-        Implement walk functionality by wrapping SNMPSession.getnext
+        Generator implementation of snmpwalk using self.getnext
         """
         for oid in oids:
             next_oid = oid
@@ -114,6 +139,8 @@ class SNMPSession(object):
                 response = self.getnext([next_oid,])[0]
                 if snmp_compare_oid(oid, response[OID]):
                     break
+                elif response[TYPE] in SNMP_ERR:
+                    raise netsnmp.SNMPError(response[VALUE])
                 next_oid = response[OID]
                 yield response
         raise StopIteration
