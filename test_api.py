@@ -8,58 +8,94 @@ if __name__ == '__main__':
     ips = ['archt01', 'archt02', 'archt03', 'archt04', 'archt05']
     ips6 = ['udp6:[fe80::c67:bb2b:dbb4:8c63]', 'udp6:[fe80::ce0b:fd3a:ac06:26a9]', 'udp6:[fe80::b97d:dda5:1b0e:dd2e]', 'udp6:[fe80::44ee:1be2:784b:84ed]', 'udp6:[fe80::ba63:79c3:cfdd:599d]']
 
-    oids      = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
-    start = time.perf_counter()
-    print('SNMP GET on %s' % oids)
-    for host in ips:
-        try:
-            # Context (automatically closes session)
-            with SNMPSession(host, 'public', debug=1) as ss:
+
+    try:
+        sys.argv[1]
+    except IndexError:
+        [sys.argv.append(op) for op in ('get', 'getnext', 'walk')]
+
+    if 'get' in sys.argv[1:]:
+        oids      = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
+        start = time.perf_counter()
+        print('SNMP GET on %s' % oids)
+        for host in ips:
+            try:
                 _start = time.perf_counter()
-                rc, responses = ss.get(oids)
-                print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
-                [print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[RESPONSE])) for oid in responses]
+                # Context (automatically closes session)
+                with SNMPSession(host, 'public', debug=1) as ss:
+                    responses = ss.get(oids)
+                    print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
+                    [print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[VALUE])) for oid in responses]
+    
+                # Non-context
+                #ss = SNMPSession(host, 'public', debug=1)
+                #responses = ss.get(oids)
+                #print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
+                #[print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[VALUE])) for oid in responses]
+                #ss.close()
+    
+            except SNMPError as e:
+                # This would ensure session is closed incase context was not used
+                try:
+                    if ss.alive:
+                        ss.close()
+                except:
+                    pass
+    
+                print("error", str(e))
+                continue
+    
+        print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
+        print()
 
-            # Non-context
-            #ss = SNMPSession(host, 'public', debug=1)
-            #rc, responses = ss.get(oids)
-            #ss.close()
-
-        except SNMPError as e:
-            print("error", str(e))
-            continue
-
-    print("Total time taken: %02fms" % ((time.perf_counter()-start)*1000))
-
-    oids      = ['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
-    start = time.perf_counter()
-    print('SNMP GETNEXT on %s' % oids)
-    for host in ips:
-        try:
-            with SNMPSession(host, 'public', debug=1) as ss:
+    if 'getnext' in sys.argv[1:]:
+        oids      = ['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
+        start = time.perf_counter()
+        print('SNMP GETNEXT on %s' % oids)
+        for host in ips:
+            try:
                 _start = time.perf_counter()
-                rc, responses = ss.getnext(oids)
-                print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
-                [print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[RESPONSE])) for oid in responses]
-
-        except SNMPError as e:
-            print("error", str(e))
-            continue
-
-    print("%02fms" % ((time.perf_counter()-start)*1000))
+                with SNMPSession(host, 'public', debug=1) as ss:
+                    responses = ss.getnext(oids)
+                    print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
+                    [print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[VALUE])) for oid in responses]
+    
+            except SNMPError as e:
+                try:
+                    if ss.alive:
+                        ss.close()
+                except:
+                    pass
+    
+                print("error", str(e))
+                continue
+    
+        print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
+        print()
 #
 #
-#    start = time.perf_counter()
-#    oids = ['.1.3.6.1.2.1.1', '1.3.6.1.2.1.2']
+    if 'walk' in sys.argv[1:]:
+        oids = ['.1.3.6.1.2.1.1', '.1.3.6.1.4.1.2021.100']
+        start = time.perf_counter()
 #    vars      = SNMPVarlist()
 #    [vars.append(SNMPVarbind(oid)) for oid in oids]
-#    print('SNMP WALK on %s' % oids)
-#    try:
-#        ss, vars = snmp(None, vars, action='walk', community='public', peer=ips[0])
-#        for var in vars:
-#            print("%s = %s: %s" % (var.oid, var.typestr, var.response))
-#        ss.close()
-#    except SNMPError as e:
-#        print("%s = ERROR: %s" % (sys.argv[1], str(e).strip()))
-#
-#    print("%02fms" % ((time.perf_counter()-start)*1000))
+        print('SNMP WALK on %s' % oids)
+        for host in ips[:1]:
+            try:
+                _start = time.perf_counter()
+                with SNMPSession(host, 'public', debug=1) as ss:
+                    for response in ss.walk(oids):
+                        print("[%s] %s = %s: %s" % (host, response[OID], response[TYPE], response[VALUE]))
+    
+            except SNMPError as e:
+                try:
+                    if ss.alive:
+                        ss.close()
+                except:
+                    pass
+    
+                print("error", str(e))
+                continue
+    
+        print("Total time taken: %.03fms" % ((time.perf_counter()-start)*1000))
+        print()
