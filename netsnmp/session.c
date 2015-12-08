@@ -21,7 +21,7 @@ create_session(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    snmp_set_do_debugging(_debug_level == 2 ? 1 : 0);
+    snmp_set_do_debugging(_debug_level==2 ? 1 : 0);
     snmp_disable_stderrlog();
     snmp_set_quick_print(1);
     set_configuration_directory("/dev/null");

@@ -121,6 +121,7 @@ __get_type_str (int type, char *str)
             strcpy(str, "ENDOFMIBVIEW");
             break;
     case SNMP_NOSUCHOBJECT:
+            strcpy(str, "NOSUCHOBJECT");
             break;
     case SNMP_NOSUCHINSTANCE:
             strcpy(str, "NOSUCHINSTANCE");
