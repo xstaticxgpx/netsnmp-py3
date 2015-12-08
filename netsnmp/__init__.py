@@ -1,52 +1,36 @@
 #!/usr/bin/env python3
+"""
+Docstring
+"""
 
 #import netsnmp._api as netsnmp
 from . import _api as netsnmp
 
-class SNMPRuntimeError(netsnmp.SNMPError):
+SNMPError = netsnmp.SNMPError
+
+class SNMPRuntimeError(SNMPError): # pylint: disable=no-init
+    """
+    Raised by SNMPSession methods on return code error
+    """
     pass
 
 SNMP_VER = {
-            '1': 0,
-            '2c': 1,
-            '3': 3,
+    '1': 0,
+    '2c': 1,
+    '3': 3,
 }
 
 SNMP_ERR = [
-            'NOSUCHINSTANCE',
-            'ENDOFMIBVIEW',
-            'NOSUCHOBJECT',
-            'ERROR',
+    'NOSUCHINSTANCE',
+    'ENDOFMIBVIEW',
+    'NOSUCHOBJECT',
+    'ERROR',
 ]
 
 # Response tuple pointers
-OID=0
-TYPE=1
-VALUE=2
-
-class SNMPVarlist(list):
-    pass
-
-class SNMPVarbind(object):
-    def __init__(self, request=None):
-        # Request
-        self.request  = request
-        # Response attributes
-        self.response = None
-        self.typestr  = None
-        self.oid      = None
-
-    def __str__(self):
-        return self.oid
-
-class SNMPResponse(object):
-    def __init__(self):
-        self.response = None
-        self.typestr = None
-        self.oid = None
-
-    def __str__(self):
-        return self.oid
+OID = 0
+TYPE = 1
+VALUE = 2
 
 def snmp_compare_oid(oid1, oid2):
     """
@@ -54,14 +38,14 @@ def snmp_compare_oid(oid1, oid2):
     Used by SNMPSession.walk
     """
     oid1_split = []
-    [oid1_split.append(i) for i in oid1.split('.') if i]
+    [oid1_split.append(i) for i in oid1.split('.') if i] # pylint: disable=expression-not-assigned
     oid1_len = len(oid1_split)
     oid1_idx = oid1_len-1
 
     oid2_split = []
-    [oid2_split.append(i) for i in oid2.split('.') if i]
+    [oid2_split.append(i) for i in oid2.split('.') if i] # pylint: disable=expression-not-assigned
 
-    if oid2_split[oid1_idx] > oid1_split[-1]:
+    if oid2_split[oid1_idx] > oid1_split[oid1_idx]:
         return True
     return False
 
@@ -69,17 +53,17 @@ class SNMPSession(object):
     """
     Session based, thread-safe interface
     """
-    def __init__(self, peername, community, version=SNMP_VER['2c'], timeout=0.5, retries=1, debug=0):
-        self.debug     = debug # 1 for partial debugging, 2 for full NETSNMP debugging
-        self.version   = version
-        self.timeout   = int(timeout*1000000)
-        self.retries   = retries
+    def __init__(self, peername, community, version=SNMP_VER['2c'], timeout=0.5, retries=1, debug=0): # pylint: disable=line-too-long
+        self.debug = debug # 1 for partial debugging, 2 for full NETSNMP debugging
+        self.version = version
+        self.timeout = int(timeout*1000000) # milliseconds converted to... microsec?
+        self.retries = retries
+        self.peername = peername
         self.community = community
-        self.peername  = peername
         # Define session
-        self.sess_ptr  = netsnmp.create_session(self.version, self.timeout, self.retries, 
-                                                self.community, self.peername, self.debug)
-        self.alive     = True
+        self.sess_ptr = netsnmp.create_session(self.version, self.timeout, self.retries,
+                                               self.community, self.peername, self.debug)
+        self.alive = True
 
     # Support context (with SNMPSession() as ss..)
     def __enter__(self):
@@ -88,36 +72,42 @@ class SNMPSession(object):
     def __exit__(self, *args):
         self.close()
 
-    def nullvar(self):
-        """
-        Called in C API walk function, returns new SNMPVarbind object reference
-        """
-        return SNMPVarbind()
-
     def close(self):
+        """
+        Close session (clear file descriptors)
+        """
         if netsnmp.close_session(self):
             self.alive = False
 
     def get(self, oids):
+        """
+        Wrap netsnmp._api.get C function
+        """
         # Define list to be populated by C API get()
         responses = []
         # netsnmp.get(SNMPSession(), oids=[oid,..], responses=[])
         # Response information is appended as a tuple of (OID, TYPE, VALUE) to responses
         # Return 1 on success, possibly raises SNMPError() exception
-        rc = netsnmp.get(self, oids, responses)
+        _rc = netsnmp.get(self, oids, responses)
         # Sanity check rc
-        if not rc:
-            raise SNMPRuntimeError("Invalid return code", rc)
+        if not _rc:
+            raise SNMPRuntimeError("Invalid return code", _rc)
         return responses
 
     def getnext(self, oids):
+        """
+        Wrap netsnmp._api.getnext C function
+        """
         responses = []
-        rc = netsnmp.getnext(self, oids, responses)
-        if not rc:
-            raise SNMPRuntimeError("Invalid return code", rc)
+        _rc = netsnmp.getnext(self, oids, responses)
+        if not _rc:
+            raise SNMPRuntimeError("Invalid return code", _rc)
         return responses
 
     def walk(self, oids):
+        """
+        Implement walk functionality by wrapping SNMPSession.getnext
+        """
         for oid in oids:
             next_oid = oid
             while True:
@@ -127,22 +117,3 @@ class SNMPSession(object):
                 next_oid = response[OID]
                 yield response
         raise StopIteration
-
-def snmp(session, var, action='get', timeout=0.5, community=None, peer=None):
-    if not session:
-        session = SNMPSession(community=community, peername=peer)
-
-    if isinstance(var, SNMPVarlist):
-        vars = var
-    elif not isinstance(var, SNMPVarbind):
-        vars = SNMPVarlist()
-        vars.append(SNMPVarbind(var))
-
-    if action == 'get':
-        ret = session.get(vars)
-    elif action == 'getnext':
-        ret = session.getnext(vars)
-    elif action == 'walk':
-        ret = session.walk(vars)
-
-    return (session, vars)
