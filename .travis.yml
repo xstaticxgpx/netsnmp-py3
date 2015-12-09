@@ -4,4 +4,8 @@ python:
   - "3.4"
 
 install:
-  - python setup.py build_ext -i
+  - wget "http://sourceforge.net/projects/net-snmp/files/net-snmp/5.7.3/net-snmp-5.7.3.tar.gz/download" -O net-snmp-5.7.3.tar.gz
+  - tar -xzvf net-snmp-5.7.3.tar.gz
+  - cd net-snmp-5.7.3 && ./configure --enable-ipv6 --with-defaults
+  - make && cd ..
+  - python setup.py --basedir=./net-snmp-5.7.3/ build_ext -i
