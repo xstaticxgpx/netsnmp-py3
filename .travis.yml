@@ -1,15 +1,16 @@
 language: python
 
+perl:
+  - "5.22"
+
 python:
   - "3.4"
-
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libperl-dev
 
 install:
   - wget "http://sourceforge.net/projects/net-snmp/files/net-snmp/5.7.3/net-snmp-5.7.3.tar.gz/download" -O net-snmp-5.7.3.tar.gz
   - tar -xzvf net-snmp-5.7.3.tar.gz
   - cd net-snmp-5.7.3 && ./configure --enable-ipv6 --with-defaults --enable-minimalist
   - make && cd ..
+  
+script:
   - python setup.py --basedir=./net-snmp-5.7.3/ build_ext -i
