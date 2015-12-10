@@ -26,5 +26,5 @@ install:
 #  - python setup.py --basedir=./net-snmp-5.7.3 build_ext -i
   
 script:
-  - exit 0
+  - ls -la $HOME
 
