@@ -3,12 +3,28 @@ language: python
 python:
   - "3.4"
 
-install:
-  - pip install -r requirements.txt
+env:
+  - ZMQ_MD5SUM="d0824317348cfb44b8692e19cc73dc3a"
+  - NETSNMP_MD5SUM="d4a3459e1577d0efa8d96ca70a885e53"
+
+# Bootstrap dependancies
+before_install:
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/opt
+  - mkdir $HOME/opt
+  # ZeroMQ and CZMQ
+  - wget "http://download.zeromq.org/zeromq-4.1.3.tar.gz" -O zeromq-4.1.3.tar.gz
+  - [ "`md5sum -b zeromq-4.1.3.tar.gz | cut -d\  -f1`" == $ZMQ_MD5SUM ] || exit 1
+  # Latest NET-SNMP
   - wget "http://sourceforge.net/projects/net-snmp/files/net-snmp/5.7.3/net-snmp-5.7.3.tar.gz/download" -O net-snmp-5.7.3.tar.gz
-  - tar -xzvf net-snmp-5.7.3.tar.gz
-  - cd net-snmp-5.7.3 && ./configure --enable-ipv6 --with-defaults --disable-embedded-perl --disable-as-needed
-  - make && cd ..
+  - [ "`md5sum -b net-snmp-5.7.3.tar.gz | cut -d\  -f1`" == $NETSNMP_MD5SUM ] || exit 1
+#  - tar -xzvf net-snmp-5.7.3.tar.gz
+#  - cd net-snmp-5.7.3 && ./configure --enable-ipv6 --with-defaults --disable-embedded-perl --disable-as-needed
+#  - make && cd ..
+install:
+   - echo $LD_LIBRARY_PATH
+#  - pip install -r requirements.txt
+#  - python setup.py --basedir=./net-snmp-5.7.3 build_ext -i
   
 script:
-  - python setup.py --basedir=./net-snmp-5.7.3 build_ext -i
+  - exit 0
+
