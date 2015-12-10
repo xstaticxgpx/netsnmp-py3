@@ -1,6 +1,9 @@
 # netsnmp-py3
 Python3 NET-SNMP Bindings (C Extension)
 
+[![Build Status](https://travis-ci.org/xstaticxgpx/netsnmp-py3.svg?branch=master)](https://travis-ci.org/xstaticxgpx/netsnmp-py3)
+
+
 Example usage: `python3 setup.py build_ext -i && ./test_api.py`
 
 Currently only supports get, getnext, and walk for now
