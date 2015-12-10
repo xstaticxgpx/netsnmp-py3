@@ -30,9 +30,7 @@ before_install:
   - ( cd net-snmp-5.7.3 && ./configure --enable-ipv6 --with-defaults --disable-embedded-perl --disable-as-needed && make )
 
 install:
-#  - echo $LD_LIBRARY_PATH
-#  - pip install -r requirements.txt
-  - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include --libdir=$HOME/opt/lib build_ext -i
+  - pip install -r requirements.txt
   
 script:
-  - exit 0
+  - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include --libdir=$HOME/opt/lib build_ext -i
