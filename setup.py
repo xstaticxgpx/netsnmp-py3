@@ -7,6 +7,7 @@ import sys
 intree=0
 
 _incdirs = ['./netsnmp']
+_libdirs = []
 
 args = sys.argv[:]
 for arg in args:
@@ -18,6 +19,10 @@ for arg in args:
         incdir = arg.split('=')[1]
         sys.argv.remove(arg)
         _incdirs.append(incdir)
+    if '--libdir' in arg:
+        libdir = arg.split('=')[1]
+        sys.argv.remove(arg)
+        _libdirs.append(libdir)
 
 
 if intree:
@@ -35,6 +40,7 @@ else:
 
 # For _api.h references/travis-ci build
 incdirs+=_incdirs
+libdirs+=_libdirs
 
 # Asynchronous IPC
 libs.append('zmq')
