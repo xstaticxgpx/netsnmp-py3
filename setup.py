@@ -6,12 +6,24 @@ import sys
 
 intree=0
 
+_incdirs = ['./netsnmp']
+_libdirs = []
+
 args = sys.argv[:]
 for arg in args:
     if '--basedir' in arg:
         basedir = arg.split('=')[1]
         sys.argv.remove(arg)
         intree=1
+    if '--incdir' in arg:
+        incdir = arg.split('=')[1]
+        sys.argv.remove(arg)
+        _incdirs.append(incdir)
+    if '--libdir' in arg:
+        libdir = arg.split('=')[1]
+        sys.argv.remove(arg)
+        _libdirs.append(libdir)
+
 
 if intree:
     netsnmp_libs = os.popen(basedir+'/net-snmp-config --libs').read()
@@ -26,12 +38,13 @@ else:
     incdirs = []
     libs = re.findall(r"-l(\S+)", netsnmp_libs)
 
-# For _api.h references
-incdirs.append('./netsnmp')
+# For _api.h references/travis-ci build
+incdirs+=_incdirs
+libdirs+=_libdirs
 
 # Asynchronous IPC
-#libs.append('zmq')
-#libs.append('czmq')
+libs.append('zmq')
+libs.append('czmq')
 
 setup(
     name="netsnmp", version="1.0a1",
@@ -43,7 +56,7 @@ setup(
                  ["netsnmp/session.c",
                   "netsnmp/get.c",
                   "netsnmp/getnext.c",
-#                  "netsnmp/get_async.c",
+                  "netsnmp/get_async.c",
                   "netsnmp/interface.c",
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,
