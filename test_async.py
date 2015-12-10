@@ -77,14 +77,14 @@ SNMP_DEVTYPES = {
         'archt02': cisco.SNMPCiscoDevice(),
         'archt03': cisco.SNMPCiscoDevice(),
         'archt04': cisco.SNMPCiscoDevice([
-            ('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
-            ('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
+            #('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
+            #('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
             ('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
         ]),
         'archt05': netsnmp._dev.SNMPDevice([
             ('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
-            ('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
-            ('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
+            #('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
+            #('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
         ]),
 }
 
@@ -139,7 +139,7 @@ def ZMQProcessor(success, oidcount, timeout):
             varlen, vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
             with oidcount.get_lock():
                 oidcount.value+=varlen
-            log.debug(vars)
+            #log.debug(vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -253,7 +253,7 @@ ROWNUM <= 1000000\
         #SNMPClassify(host, community)
         (host, community, host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200000]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
