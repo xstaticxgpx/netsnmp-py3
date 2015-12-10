@@ -2,7 +2,7 @@
 
 import netsnmp
 from netsnmp._api import get_async
-from netsnmp._dev import *
+from netsnmp._dev import cisco
 #import cx_Oracle
 import zmq
 import redis, hiredis
@@ -47,7 +47,7 @@ ZMQ_PROCESSORS = 4
 zmq_processors = []
 
 # Time to pause for ZMQ initialization (Seconds)
-ZMQ_PAUSE=0.1
+ZMQ_PAUSE=0.005
 
 # ZMQ High water mark
 ZMQ_HWM=10000000
@@ -68,6 +68,25 @@ SNMP_RETRIES=1
 # SNMP timeout is in milliseconds
 SNMP_TIMEOUT=250
 SNMP_TIMEOUT_DELTA=MAX_WORKERS
+
+# temporary
+SNMP_DEVTYPES = {
+        'archt01': cisco.SNMPCiscoDevice([
+            ('sysHostname', '.1.3.6.1.2.1.1.5.0'),
+        ]),
+        'archt02': cisco.SNMPCiscoDevice(),
+        'archt03': cisco.SNMPCiscoDevice(),
+        'archt04': cisco.SNMPCiscoDevice([
+            ('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
+            ('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
+            ('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
+        ]),
+        'archt05': netsnmp._dev.SNMPDevice([
+            ('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
+            ('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
+            ('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
+        ]),
+}
 
 # Messaging Intake/Processing
 def ZMQProcessor(success, oidcount, timeout):
@@ -120,7 +139,7 @@ def ZMQProcessor(success, oidcount, timeout):
             varlen, vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
             with oidcount.get_lock():
                 oidcount.value+=varlen
-            #log.debug(vars)
+            log.debug(vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -231,9 +250,10 @@ ROWNUM <= 1000000\
     start = time.perf_counter()
     # append host tuple with inline ipv6 logic
     [hosts.append(
-        SNMPClassify(host, community)
+        #SNMPClassify(host, community)
+        (host, community, host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20000]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
@@ -350,9 +370,6 @@ ROWNUM <= 1000000\
         zmq_sentinel.connect(ZMQ_IN)
         for _ in range(ZMQ_PROCESSORS):
             zmq_sentinel.send(b'_sentinel')
-
-        time.sleep(ZMQ_PAUSE)
-
         zmq_sentinel.close()
 
         # Wait for ZMQProcessor(s) to complete
