@@ -30,8 +30,8 @@ else:
 incdirs.append('./netsnmp')
 
 # Asynchronous IPC
-#libs.append('zmq')
-#libs.append('czmq')
+libs.append('zmq')
+libs.append('czmq')
 
 setup(
     name="netsnmp", version="1.0a1",
@@ -43,7 +43,7 @@ setup(
                  ["netsnmp/session.c",
                   "netsnmp/get.c",
                   "netsnmp/getnext.c",
-#                  "netsnmp/get_async.c",
+                  "netsnmp/get_async.c",
                   "netsnmp/interface.c",
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,
