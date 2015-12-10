@@ -32,7 +32,7 @@ before_install:
 install:
 #  - echo $LD_LIBRARY_PATH
 #  - pip install -r requirements.txt
-  - python setup.py --basedir=./net-snmp-5.7.3 build_ext -i
+  - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include build_ext -i
   
 script:
   - exit 0

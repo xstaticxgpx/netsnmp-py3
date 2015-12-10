@@ -6,12 +6,19 @@ import sys
 
 intree=0
 
+_incdirs = ['./netsnmp']
+
 args = sys.argv[:]
 for arg in args:
     if '--basedir' in arg:
         basedir = arg.split('=')[1]
         sys.argv.remove(arg)
         intree=1
+    if '--incdir' in arg:
+        incdir = arg.split('=')[1]
+        sys.argv.remove(arg)
+        _incdirs.append(incdir)
+
 
 if intree:
     netsnmp_libs = os.popen(basedir+'/net-snmp-config --libs').read()
@@ -26,8 +33,8 @@ else:
     incdirs = []
     libs = re.findall(r"-l(\S+)", netsnmp_libs)
 
-# For _api.h references
-incdirs.append('./netsnmp')
+# For _api.h references/travis-ci build
+incdirs+=_incdirs
 
 # Asynchronous IPC
 libs.append('zmq')
