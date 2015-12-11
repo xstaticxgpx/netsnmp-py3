@@ -16,5 +16,10 @@ class SNMPCiscoDevice(SNMPDevice):
             assert type(oids) == list
             # Append any extra OIDs
             self._oids+=oids
-        print(self._oids)
         SNMPDevice.__init__(self, oids=self._oids)
+
+    def parse_oids(self, response):
+        _vars = [var.split('=', maxsplit=1) for var in response]
+        _vars = [(oid, value.replace('"', '')) for (oid, value) in _vars]
+        return (len(_vars), {self._str2oid[oid]: value for (oid, value) in _vars})
+
