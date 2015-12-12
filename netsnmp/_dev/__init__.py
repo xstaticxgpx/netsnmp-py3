@@ -17,5 +17,4 @@ class SNMPDevice(object):
 
     def parse_oids(self, response):
         _vars = [var.split('=', maxsplit=1) for var in response]
-        return (len(_vars), {self._str2oid[oid]: value for (oid, value) in _vars})
-
+        return {self._str2oid[oid]: value for (oid, value) in _vars}
