@@ -37,12 +37,12 @@ DB = {
 #BUG: udp sendto failures when 49116 > MAX_WORKERS*MAX_PER_WORKER > 49112
 # limitation lies somewhere between 49112 and 49116(??) - getting EPERM (1)... kernel dropping?
 #http://comments.gmane.org/gmane.comp.security.firewalls.netfilter.devel/29993
-# 8 * 4096 = 32768 max requests at any given time
-MAX_WORKERS=2
+# Ceiling is around 8 * 4096 = 32768 max requests at any given time
+MAX_WORKERS = mp.cpu_count() if mp.cpu_count() <= 8 else 8
 MAX_PER_WORKER=4096
 
 # Number of ZMQ PULL processes to spawn
-ZMQ_PROCESSORS = 4
+ZMQ_PROCESSORS = int(MAX_WORKERS/2)
 zmq_processors = []
 
 # Time to pause for ZMQ initialization (Seconds)
@@ -69,12 +69,17 @@ SNMP_TIMEOUT=250
 #SNMP_TIMEOUT_DELTA=MAX_WORKERS
 
 # Messaging Intake/Processing
-def ZMQProcessor(success, oidcount, timeout):
+def ZMQProcessor(success, timeout, oidcount):
     """
     Intake work via ZeroMQ socket and queue for processing after _sentinel is signaled
     """
 
     _type_count = {}
+    # Local counters, rolled up into mp.Value at end
+    _success = 0
+    _timeout = 0
+    _oidcount = 0
+
 
     # Per-processor queue
     q = queue.Queue()
@@ -106,8 +111,7 @@ def ZMQProcessor(success, oidcount, timeout):
     while not q.empty():
         response = [frame.decode() for frame in q.get()]
         if response[OP] == '1':
-            with success.get_lock():
-                success.value+=1
+            _success+=1
 
             try:
                 _type_count[response[DEVTYPE]]+=1
@@ -116,10 +120,9 @@ def ZMQProcessor(success, oidcount, timeout):
                 _type_count[response[DEVTYPE]]=1
 
             # Parse OIDs
-            varlen, vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
-            with oidcount.get_lock():
-                oidcount.value+=varlen
-            log.debug(vars)
+            _vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
+            _oidcount+=len(_vars)
+            #log.debug(_vars)
             try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -138,6 +141,10 @@ def ZMQProcessor(success, oidcount, timeout):
     #_redis.execute()
     end = time.perf_counter()
     elapsed = end-start
+    with success.get_lock():
+        success.value+=_success
+    with oidcount.get_lock():
+        oidcount.value+=_oidcount
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
     log.debug('%s', _type_count)
 
@@ -233,7 +240,7 @@ ROWNUM <= 1000000\
         #SNMPClassify(host, community)
         (host, community, host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*10000]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
@@ -244,8 +251,8 @@ ROWNUM <= 1000000\
     try:
         ## Global multiprocessing-safe counters
         success = mp.Value('i', 0)
-        oidcount = mp.Value('i', 0)
         timeout = mp.Value('i', 0)
+        oidcount = mp.Value('i', 0)
         ## ZMQStreamer switch (set to 1 after successful initialization)
         zmq_streamer_running = mp.Value('i', 0)
 
@@ -267,7 +274,7 @@ ROWNUM <= 1000000\
         for i in range(ZMQ_PROCESSORS):
             zmq_processors.append(
                 mp.Process(target=ZMQProcessor,
-                            args=(success, oidcount, timeout),
+                            args=(success, timeout, oidcount),
                             name='ZMQProc-%03d' % (i+1),
                             daemon=True)
             )
