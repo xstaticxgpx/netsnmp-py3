@@ -18,7 +18,7 @@ static int active_hosts = 0;
 zctx_t *zmq_ctx;
 void *zmq_push;
 
-netsnmp_callback *
+static netsnmp_callback *
 get_async_cb(int operation, netsnmp_session *ss, int reqid,
                 netsnmp_pdu *pdu, void *magic)
 {
@@ -135,9 +135,13 @@ get_async(PyObject *self, PyObject *args)
         return NULL;
       }
       char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
-      u_char *comm = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
-      u_char *devtype = (u_char *)PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
-      PyObject *oids = PyObject_GetAttrString(PyTuple_GetItem(host, 3), "oids");
+      char *comm = PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
+      // This string is passed as callback magic below
+      // helps us quickly correlate devtype class instance after callback
+      char *devtype = PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
+      // Get "oids" list attribute from the SNMPDevice class/subclass object
+      PyObject *devtype_class = PyTuple_GetItem(host, 3);
+      PyObject *oids = PyObject_GetAttrString(devtype_class, "oids");
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
       rc = asprintf(&snmp_send_err, "[%d] snmp_send %s", proc_id, name);
@@ -156,8 +160,8 @@ get_async(PyObject *self, PyObject *args)
       sess.peername      = name;
       sess.timeout       = timeout*1000;
       sess.retries       = retries;
-      sess.community     = comm;
-      sess.community_len = strlen((char *)sess.community);
+      sess.community     = (u_char *)comm;
+      sess.community_len = strlen(comm);
       sess.callback      = (netsnmp_callback)get_async_cb;
       sess.callback_magic= (void *)devtype;
 

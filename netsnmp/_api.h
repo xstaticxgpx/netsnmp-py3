@@ -7,7 +7,6 @@
 #define SUCCESS 1
 #define FAILURE 0
 
-
 int _debug_level;
 
 /* Exceptions */
@@ -29,6 +28,7 @@ PyObject *getnext        (PyObject *self, PyObject *args);
 PyObject *close_session  (PyObject *self, PyObject *args);
 
 /* Asynchronous implementations */
-netsnmp_callback 
-         *get_async_cb   (int operation, netsnmp_session *ss, int reqid, netsnmp_pdu *pdu, void *magic);
+// Now defined as static in respective source file:
+//netsnmp_callback 
+//         *get_async_cb   (int operation, netsnmp_session *ss, int reqid, netsnmp_pdu *pdu, void *magic);
 PyObject *get_async      (PyObject *self, PyObject *args);

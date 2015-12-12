@@ -136,13 +136,14 @@ def ZMQProcessor(success, timeout, oidcount):
                 #_redis.execute()
                 i=0
         elif response[OP] == '2':
-            with timeout.get_lock():
-                timeout.value+=1
+            _timeout+=1
     #_redis.execute()
     end = time.perf_counter()
     elapsed = end-start
     with success.get_lock():
         success.value+=_success
+    with timeout.get_lock():
+        timeout.value+=_timeout
     with oidcount.get_lock():
         oidcount.value+=_oidcount
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
@@ -206,38 +207,14 @@ ROWNUM <= 1000000\
     #select = dbh.cursor()
     #select.arraysize = 4096
     
-    _oids = {
-            'ap.model': '1.3.6.1.2.1.1.1.0',
-            'ap.serial_number': '1.3.6.1.4.1.15768.3.1.1.11.2.0',
-            'ap.tunnel_peer1': '1.3.6.1.4.1.15768.5.1.1.2.1.5.1.1',
-            'ap.tunnel_peer2': '1.3.6.1.4.1.15768.5.1.1.2.1.9.1.1',
-            'ap.swbank_active': '1.3.6.1.4.1.15768.3.1.1.3.1.0',
-            'ap.swbank_next': '1.3.6.1.4.1.15768.3.1.1.3.2.0',
-            'ap.software_a': '1.3.6.1.4.1.15768.3.1.1.3.5.1.2.1',
-            'ap.software_b': '1.3.6.1.4.1.15768.3.1.1.3.5.1.2.2',
-            'ap.tunnel_status': '1.3.6.1.4.1.15768.5.1.1.3.1.1.1.1',
-            'ap.vpn_label': '1.3.6.1.4.1.15768.5.1.1.2.1.2.1.1',
-            'ap.tunnel1_active': '1.3.6.1.4.1.15768.5.1.1.3.1.3.1.1',
-            'ap.tunnel2_active': '1.3.6.1.4.1.15768.5.1.1.3.1.4.1.1',
-            'ap.radius_server1': '1.3.6.1.2.1.67.1.2.1.1.3.1.2.1',
-            'ap.radius_server2': '1.3.6.1.2.1.67.1.2.1.1.3.1.2.2',
-#            'cm.software': '1.3.6.1.4.1.15768.6.4.1.1.1.5.1',
-    }
-    oids = {
-            'sysDescr': '1.3.6.1.2.1.1.1.0',
-            'upTime' : '1.3.6.1.2.1.1.3.0',
-    }
-
     hosts = []
-    oidl  = list(oids.values())
 
     # Absolute start timer
     _start = time.time()
     # Step timer
     start = time.perf_counter()
-    # append host tuple with inline ipv6 logic
     [hosts.append(
-        #SNMPClassify(host, community)
+        #peername str, community str, devtype str, devtype class instance
         (host, community, host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
     ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*10000]
@@ -310,10 +287,10 @@ ROWNUM <= 1000000\
                                       ZMQ_HWM, 
                                       ZMQ_IN), daemon=True)
                 )
+                workers[-1].start()
 
                 del hosts[:MAX_PER_WORKER]
                 i+=MAX_PER_WORKER
-                workers[-1].start()
                 if len(workers) < MAX_WORKERS:
                     p+=1
                     continue
