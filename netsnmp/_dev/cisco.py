@@ -26,4 +26,4 @@ class SNMPCiscoDevice(SNMPDevice):
         # e.g., remove double quotes from string responses
         _vars = [(oid, value.replace('"', '')) for (oid, value) in _vars]
 
-        return {self._str2oid[oid]: value for (oid, value) in _vars}
+        return {self._oid2str[oid]: value for (oid, value) in _vars}
