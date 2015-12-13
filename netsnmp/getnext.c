@@ -20,7 +20,7 @@ getnext(PyObject *self, PyObject *args)
   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
   char type_str[MAX_TYPE_NAME_LEN];
   char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
-  size_t mib_buf_len = MAX_OID_LEN;
+  size_t mib_buf_len = -1;
   char str_buf[STR_BUF_SIZE], *str_bufp = str_buf;
   size_t str_buf_len = STR_BUF_SIZE;
   size_t out_len = 0;
