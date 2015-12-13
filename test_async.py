@@ -38,7 +38,7 @@ DB = {
 # limitation lies somewhere between 49112 and 49116(??) - getting EPERM (1)... kernel dropping?
 #http://comments.gmane.org/gmane.comp.security.firewalls.netfilter.devel/29993
 # Ceiling is around 8 * 4096 = 32768 max requests at any given time
-MAX_WORKERS = mp.cpu_count() if mp.cpu_count() <= 8 else 8
+MAX_WORKERS = int(mp.cpu_count()*2) if mp.cpu_count() <= 4 else 8
 MAX_PER_WORKER=4096
 
 # Number of ZMQ PULL processes to spawn
@@ -260,7 +260,7 @@ ROWNUM <= 1000000\
         time.sleep(ZMQ_PAUSE)
 
         # List of multiprocessing.Process() objects (worker processes)
-        workers = []
+        active_workers = []
         
         # Worker/process id iterator
         p=0
@@ -268,10 +268,10 @@ ROWNUM <= 1000000\
         i=0
         # While any hosts or workers exist
         start = time.perf_counter()
-        while hosts or workers:
+        while hosts or active_workers:
             pids = []
             remaining = total-i
-            if hosts and len(workers) < MAX_WORKERS:
+            if hosts and len(active_workers) < MAX_WORKERS:
                 #_timeout = SNMP_TIMEOUT+random.randint(p%2, SNMP_TIMEOUT_DELTA)
                 _timeout = SNMP_TIMEOUT
                 _upper = i+MAX_PER_WORKER if remaining > MAX_PER_WORKER else i+remaining
@@ -279,7 +279,7 @@ ROWNUM <= 1000000\
 
                 # Define process(es) which call get_async C function
                 # get_async([(str hostname, str community, [str oid,..])..], int timeout_ms, int retries, int ZMQ_HWM, str ZMQ_IN)
-                workers.append(
+                active_workers.append(
                     mp.Process(target=get_async,
                                 args=(hosts[:MAX_PER_WORKER], 
                                       _timeout,
@@ -287,27 +287,27 @@ ROWNUM <= 1000000\
                                       ZMQ_HWM, 
                                       ZMQ_IN), daemon=True)
                 )
-                workers[-1].start()
+                active_workers[-1].start()
 
                 del hosts[:MAX_PER_WORKER]
                 i+=MAX_PER_WORKER
-                if len(workers) < MAX_WORKERS:
+                if len(active_workers) < MAX_WORKERS:
                     p+=1
                     continue
                 else:
                     p=0
 
-            [pids.append(proc.pid) for proc in workers]
+            [pids.append(proc.pid) for proc in active_workers]
             log.debug('Process PIDs: %s' % pids)
 
-            # Continually monitor progress and re-loop when all workers are finished (unless force_reloop)
-            while workers:
+            # Continually monitor progress and re-loop when all workers are finished, or maintain process pool with force_reloop
+            while active_workers:
                 force_reloop = False
-                for proc in workers:
+                for proc in active_workers:
                     if proc.is_alive():
                         continue
                     else:
-                        workers.remove(proc)
+                        active_workers.remove(proc)
                         if proc.exitcode == 0:
                             log.info('%d - Process finished' % proc.pid)
                         else:

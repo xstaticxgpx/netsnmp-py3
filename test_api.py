@@ -49,7 +49,7 @@ if __name__ == '__main__':
         print()
 
     if 'getnext' in sys.argv[1:]:
-        oids = ['.1.3.6.1.2.1.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
+        oids = ['.1.3.6.1.2.1.1', '.1.3.6.1.2.1.4.24.7.1.10.2.16.254.128.0.0.0.0.0.0.12.103.187.43.219.180.140.99.128.3.0.0.8.2.16.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0']
         start = time.perf_counter()
         print('SNMP GETNEXT on %s' % oids)
         for host in ips:
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         print()
 
     if 'walk' in sys.argv[1:]:
-        oids = ['.1.3.6.1.2.1.1', '.1.3.6.1.4.1.2021.100']
+        oids = ['.1.3.6.1.2.1.4.24.7.1.10', '.1.3.6.1.4.1.2021.100']
         start = time.perf_counter()
         print('SNMP WALK on %s' % oids)
         for host in ips[:1]:
