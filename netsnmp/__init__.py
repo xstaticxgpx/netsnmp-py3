@@ -103,9 +103,7 @@ class SNMPSession(object):
             self._alive = False
 
     def is_alive(self):
-        if self._alive:
-            return True
-        return False
+        return self._alive
 
     def get(self, oids):
         """
@@ -128,9 +126,11 @@ class SNMPSession(object):
         Wrap netsnmp._api.getnext C function
         """
         responses = []
-
+        # Flag for GETNEXT
         self._next = True
-        if not netsnmp.get(self, oids, responses):
+
+        _rc = netsnmp.get(self, oids, responses)
+        if not _rc:
             raise SNMPRuntimeError("Invalid return code", _rc)
         return responses
 
