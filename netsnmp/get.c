@@ -11,25 +11,23 @@ get(PyObject *self, PyObject *args)
   PyObject *oids_iter;
   PyObject *responses;
   PyObject *oidstr;
+  PyObject *next;
   netsnmp_session *ss;
   netsnmp_pdu *pdu, *response;
   netsnmp_variable_list *var;
-  //int oids_len = 0;
-  //int oids_ind;
   size_t oid_arr_len;
   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
-  char type_str[MAX_TYPE_NAME_LEN];
   char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
-  size_t mib_buf_len = MAX_OID_LEN;
-  char str_buf[STR_BUF_SIZE], *str_bufp = str_buf;
-  size_t str_buf_len = STR_BUF_SIZE;
+  size_t mib_buf_len = -1;
+  char str_buf[SPRINT_MAX_LEN], *str_bufp = str_buf;
+  size_t str_buf_len = SPRINT_MAX_LEN;
   size_t out_len = 0;
   int buf_over = 0;
   int status;
   int len;
   int err_num;
   int snmp_err_num;
-  char err_buf[STR_BUF_SIZE], *err_bufp = err_buf;
+  char err_buf[SPRINT_MAX_LEN], *err_bufp = err_buf;
   Py_ssize_t *oidstr_len = 0;
 
     if (!PyArg_ParseTuple(args, "OOO", &session, &oids, &responses)) {
@@ -40,7 +38,12 @@ get(PyObject *self, PyObject *args)
 
     ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
 
-    pdu = snmp_pdu_create(SNMP_MSG_GET);
+    next = PyObject_GetAttrString(session, "_next");
+    if (next == Py_True) {
+        pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+    } else {
+        pdu = snmp_pdu_create(SNMP_MSG_GET);
+    }
 
     if (oids) {
 
@@ -136,9 +139,8 @@ get(PyObject *self, PyObject *args)
                     __py_attr_set_string(varbind, "typestr", type_str, strlen(type_str));
                     __py_attr_set_string(varbind, "oid", mib_buf, mib_buf_len);
                     */
-                    __get_type_str(var->type, type_str);
-                    /* new */
-                    PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, type_str, str_buf));
+
+                    PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var->type), str_buf));
                 }
         }
         snmp_free_pdu(response);

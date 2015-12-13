@@ -55,7 +55,6 @@ setup(
        Extension("netsnmp._api",
                  ["netsnmp/session.c",
                   "netsnmp/get.c",
-                  "netsnmp/getnext.c",
                   "netsnmp/get_async.c",
                   "netsnmp/interface.c",
                   "netsnmp/_api.c"],

@@ -82,7 +82,9 @@ class SNMPSession(object):
         # Define session
         self.sess_ptr = netsnmp.create_session(self.version, self.timeout, self.retries,
                                                self.community, self.peername, self.debug)
+        # Internal variables
         self._alive = True
+        self._next = False
 
     def __enter__(self):
         """
@@ -111,6 +113,7 @@ class SNMPSession(object):
         """
         # Define list to be populated by C API get()
         responses = []
+
         # netsnmp.get(SNMPSession(), oids=[oid,..], responses=[])
         # Response information is appended as a tuple of (OID, TYPE, VALUE) to responses
         # Return 1 on success, possibly raises SNMPError() exception
@@ -125,8 +128,9 @@ class SNMPSession(object):
         Wrap netsnmp._api.getnext C function
         """
         responses = []
-        _rc = netsnmp.getnext(self, oids, responses)
-        if not _rc:
+
+        self._next = True
+        if not netsnmp.get(self, oids, responses):
             raise SNMPRuntimeError("Invalid return code", _rc)
         return responses
 

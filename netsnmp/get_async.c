@@ -27,9 +27,9 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
     size_t out_len = 0;
     int buf_over = 0;
     char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
-    size_t mib_buf_len = MAX_OID_LEN;
-    char str_buf[STR_BUF_SIZE], *str_bufp = str_buf;
-    size_t str_buf_len = STR_BUF_SIZE;
+    size_t mib_buf_len = -1;
+    char str_buf[SPRINT_MAX_LEN], *str_bufp = str_buf;
+    size_t str_buf_len = SPRINT_MAX_LEN;
 
     //_cb = (PyObject *)magic;
     //pid_t proc_id = getpid();

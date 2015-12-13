@@ -68,67 +68,68 @@ __py_attr_set_string(PyObject *obj, char *attr_name,
   return ret;
 }
 
-int
-__get_type_str (int type, char *str)
+char *
+__get_type_str (int type)
 {
+   char *str;
    switch (type) {
     case ASN_BOOLEAN:
-            strcpy(str, "BOOLEAN");
+            str = "BOOLEAN";
             break;
     case ASN_INTEGER:
-            strcpy(str, "INTEGER");
+            str = "INTEGER";
             break;
     case ASN_BIT_STR:
-            strcpy(str, "BITSTR");
+            str = "BITSTR";
             break;
     case ASN_OCTET_STR:
-            strcpy(str, "STRING");
+            str = "STRING";
             break;
     case ASN_NULL:
-            strcpy(str, "NULL");
+            str = "NULL";
             break;
     case ASN_OBJECT_ID:
-            strcpy(str, "OID");
+            str = "OID";
             break;
     case ASN_SEQUENCE:
-            strcpy(str, "SEQUENCE");
+            str = "SEQUENCE";
             break;
     case ASN_SET:
-            strcpy(str, "SET");
+            str = "SET";
             break;
     case ASN_TIMETICKS:
-            strcpy(str, "Timeticks");
+            str = "Timeticks";
             break;
     case ASN_COUNTER:
-            strcpy(str, "Counter32");
+            str = "Counter32";
             break;
     case ASN_OPAQUE:
-            strcpy(str, "Opaque");
+            str = "Opaque";
             break;
     case ASN_COUNTER64:
-            strcpy(str, "Counter64");
+            str = "Counter64";
             break;
     case ASN_INTEGER64:
-            strcpy(str, "Integer64");
+            str = "Integer64";
             break;
     case ASN_GAUGE:
-            strcpy(str, "Gauge32");
+            str = "Gauge32";
             break;
     case ASN_IPADDRESS:
-            strcpy(str, "IpAddress");
+            str = "IpAddress";
             break;
+    // Errors:
     case SNMP_ENDOFMIBVIEW:
-            strcpy(str, "ENDOFMIBVIEW");
+            str = "ENDOFMIBVIEW";
             break;
     case SNMP_NOSUCHOBJECT:
-            strcpy(str, "NOSUCHOBJECT");
+            str = "NOSUCHOBJECT";
             break;
     case SNMP_NOSUCHINSTANCE:
-            strcpy(str, "NOSUCHINSTANCE");
+            str = "NOSUCHINSTANCE";
             break;
     default: /* unconfigured types for now */
-            strcpy(str, "UNKNOWN");
-            if (_debug_level) printf("__get_type_str:FAILURE(%d)\n", type);
+            str = "UNKNOWN";
    }
-   return SUCCESS;
+   return str;
 }

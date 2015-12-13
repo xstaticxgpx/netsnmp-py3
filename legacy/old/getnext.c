@@ -6,34 +6,35 @@
 PyObject *
 getnext(PyObject *self, PyObject *args) 
 {
-    PyObject *session;
-    PyObject *varlist;
-    PyObject *varlist_iter;
-    PyObject *varbind;
-    netsnmp_session *ss;
-    char *request;
-    netsnmp_pdu *pdu, *response;
-    netsnmp_variable_list *var;
-    int varlist_len = 0;
-    int varlist_ind;
-    oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
-    size_t oid_arr_len = MAX_OID_LEN;
-    char type_str[MAX_TYPE_NAME_LEN];
-    char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
-    size_t mib_buf_len = MAX_OID_LEN;
-    char str_buf[STR_BUF_SIZE], *str_bufp = str_buf;
-    size_t str_buf_len = STR_BUF_SIZE;
-    size_t out_len = 0;
-    int buf_over = 0;
-    int status;
-    int len;
-    int err_num;
-    int snmp_err_num;
-    char err_buf[STR_BUF_SIZE], *err_bufp = err_buf;
+  PyObject *session;
+  PyObject *oids;
+  PyObject *oids_iter;
+  PyObject *responses;
+  PyObject *oidstr;
+  netsnmp_session *ss;
+  netsnmp_pdu *pdu, *response;
+  netsnmp_variable_list *var;
+  //int oids_len = 0;
+  //int oids_ind;
+  size_t oid_arr_len;
+  oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
+  char type_str[MAX_TYPE_NAME_LEN];
+  char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
+  size_t mib_buf_len = -1;
+  char str_buf[STR_BUF_SIZE], *str_bufp = str_buf;
+  size_t str_buf_len = STR_BUF_SIZE;
+  size_t out_len = 0;
+  int buf_over = 0;
+  int status;
+  int len;
+  int err_num;
+  int snmp_err_num;
+  char err_buf[STR_BUF_SIZE], *err_bufp = err_buf;
+  Py_ssize_t *oidstr_len = 0;
 
-    if (!PyArg_ParseTuple(args, "OO", &session, &varlist)) {
+    if (!PyArg_ParseTuple(args, "OOO", &session, &oids, &responses)) {
         //snmp_sess_close(ss);
-        PyErr_Format(SNMPError, "getnext: unable to parse tuple\n");
+        PyErr_Format(SNMPError, "getnext: unable to parse argument tuple\n");
         return NULL;
     }
 
@@ -41,32 +42,29 @@ getnext(PyObject *self, PyObject *args)
 
     pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
 
-    if (varlist) {
+    if (oids) {
 
-        varlist_iter = PyObject_GetIter(varlist);
+        oids_iter = PyObject_GetIter(oids);
 
-        while (varlist_iter && (varbind = PyIter_Next(varlist_iter)) && (oid_arr_len = MAX_OID_LEN)) {
-            if (__py_attr_get_string(varbind, "request", &request, NULL) < 0)
-            {
-                oid_arr_len = 0;
-            } else {
-                if (!snmp_parse_oid(request, oid_arr_ptr, &oid_arr_len)) {
-                   oid_arr_len = 0;
-                }
+        while (oids_iter && (oidstr = PyIter_Next(oids_iter)) && (oid_arr_len = MAX_OID_LEN)) {
+
+            char *_oidstr = (char *)PyUnicode_AsUTF8AndSize(oidstr, oidstr_len);
+            if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
+               oid_arr_len = 0;
             }
 
             if (oid_arr_len) {
                 snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
-                varlist_len++;
             } else {
                 snmp_free_pdu(pdu);
-                snmp_sess_close(ss);
-                PyErr_Format(SNMPError, "getnext: unknown object ID (%s)\n", (request ? request : "<null>"));
+                //snmp_sess_close(ss);
+                PyErr_Format(SNMPError, "getnext: unknown object ID (%s)\n", (_oidstr ? _oidstr : "<null>"));
                 return NULL;
             }
-            Py_DECREF(varbind);
+            //Py_DECREF(_oidstr);
+            Py_DECREF(oidstr);
         }
-        Py_DECREF(varlist_iter);
+        Py_DECREF(oids_iter);
     }
 
     /*
@@ -80,33 +78,30 @@ getnext(PyObject *self, PyObject *args)
     // Re-lock afterwards
     Py_END_ALLOW_THREADS
 
-    if (response == NULL && (status == STAT_SUCCESS)) {
+    if (response == NULL && (status == STAT_SUCCESS))
         status = STAT_ERROR;
-    }
 
     if (!status == STAT_SUCCESS) {
         snmp_sess_error(ss, &err_num, &snmp_err_num, &err_bufp);
         if (_debug_level) printf("snmp_syserr: %d\nsnmp_errnum: %d\n", err_num, -snmp_err_num);
         snmp_free_pdu(response);
-        snmp_sess_close(ss);
+        //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "%s\n", err_bufp);
         return NULL;
     } else {
         /* initialize return tuple:
-        res_tuple = PyTuple_New(varlist_len);
-        for (varlist_ind = 0; varlist_ind < varlist_len; varlist_ind++) {
-            PyTuple_SetItem(res_tuple, varlist_ind, Py_BuildValue(""));
+        for (oids_ind = 0; oids_ind < oids_len; oids_ind++) {
+            PyTuple_SetItem(res_tuple, oids_ind, Py_BuildValue(""));
         }
         */
 
-        for(var = response->variables, varlist_ind = 0;
-            var && (varlist_ind < varlist_len);
-            var = var->next_variable, varlist_ind++, out_len = 0) {
+        for(var = response->variables; var; var = var->next_variable, out_len = 0) {
                 /* netsnmp library stdout print call:
                 print_variable(var->name, var->name_length, var);
                 */
-
-                varbind = PySequence_GetItem(varlist, varlist_ind);
+                
+                //varbind = PySequence_GetItem(oids, oids_ind);
+                //PyObject *res_tuple = PyTuple_New(3);
 
                 /*
                  * void
@@ -115,6 +110,8 @@ getnext(PyObject *self, PyObject *args)
                  *                              int *buf_overflow,
                  *                              const oid * objid, size_t objidlen)
                  */
+                //printf("%p\n", mib_bufp);
+                //printf("%d\n", out_len);
                 netsnmp_sprint_realloc_objid((u_char **)&mib_bufp, &mib_buf_len,
                                              &out_len, 1, &buf_over,
                                              var->name, var->name_length);
@@ -130,20 +127,23 @@ getnext(PyObject *self, PyObject *args)
 
                 if (!(len > 0)) {
                     snmp_free_pdu(response);
-                    snmp_sess_close(ss);
-                    PyErr_Format(SNMPError, "getnext: null response (%s)\n",  mib_buf);
+                    //snmp_sess_close(ss);
+                    PyErr_Format(SNMPError, "getnext: null response (%s)\n", mib_buf);
                     return NULL;
                 } else {
+                    /* old attribute methodology:
                     __py_attr_set_string(varbind, "response", str_buf, len);
-
-                    __get_type_str(var->type, type_str);
                     __py_attr_set_string(varbind, "typestr", type_str, strlen(type_str));
-
                     __py_attr_set_string(varbind, "oid", mib_buf, mib_buf_len);
+                    */
+                    __get_type_str(var->type, type_str);
+                    /* new */
+                    PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, type_str, str_buf));
                 }
         }
         snmp_free_pdu(response);
         //snmp_sess_close(ss);
     }
+    //return responses ? responses : NULL;
     return Py_BuildValue("i", 1);
 }
