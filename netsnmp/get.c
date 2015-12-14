@@ -139,7 +139,7 @@ get(PyObject *self, PyObject *args)
                     __py_attr_set_string(varbind, "oid", mib_buf, mib_buf_len);
                     */
 
-                    PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var->type), str_buf));
+                    PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var), str_buf));
                 }
         }
         snmp_free_pdu(response);
