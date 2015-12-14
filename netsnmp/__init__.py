@@ -144,8 +144,10 @@ class SNMPSession(object):
                 response = self.getnext([next_oid,])[0]
                 if snmp_compare_oid(oid, response[OID]):
                     break
+                elif response[TYPE] == "ENDOFMIBVIEW":
+                    break
                 elif response[TYPE] in SNMP_ERR:
-                    raise netsnmp.SNMPError(response[VALUE])
+                    raise netsnmp.SNMPError(response[TYPE], response[VALUE])
                 next_oid = response[OID]
                 yield response
         raise StopIteration
