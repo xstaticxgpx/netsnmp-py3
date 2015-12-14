@@ -19,11 +19,11 @@ class SNMPCiscoDevice(SNMPDevice):
 
     # For demonstration purposes, this is how we can parse oids different in subclass
     def parse_oids(self, response):
-        # Responses come back as pipe delimited OID|VALUE
-        _vars = [tuple(var.split('|', maxsplit=1)) for var in response]
+        # Responses come back as pipe delimited OID|TYPE|VALUE
+        _vars = [tuple(var.split('|', maxsplit=2)) for var in response]
 
         # This is where we vary from SNMPDevice
         # e.g., remove double quotes from string responses
-        _vars = [(oid, value.replace('"', '')) for oid, value in _vars]
+        _vars = [(oid, type, value.replace('"', '')) for oid, type, value in _vars]
 
-        return {self._oid2str[oid]: value for oid, value in _vars}
+        return {self._oid2str[oid]: (type, value) for oid, type, value in _vars}

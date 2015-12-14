@@ -22,7 +22,7 @@ static netsnmp_callback *
 get_async_cb(int operation, netsnmp_session *ss, int reqid,
                 netsnmp_pdu *pdu, void *magic)
 {
-    netsnmp_variable_list *vars;
+    netsnmp_variable_list *var;
     zmsg_t *_zmqmsg = zmsg_new();
     size_t out_len = 0;
     int buf_over = 0;
@@ -46,18 +46,18 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
     zmsg_addstrf(_zmqmsg, "%s", _devtype);
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
         //var_list = PyList_New(0);
-        for (vars = pdu->variables; vars; vars = vars->next_variable, out_len = 0) {
+        for (var = pdu->variables; var; var = var->next_variable, out_len = 0) {
 
             // Get response OID
             netsnmp_sprint_realloc_objid(&mib_bufp, &mib_buf_len,
                                          &out_len, 1, &buf_over,
-                                         vars->name, vars->name_length);
+                                         var->name, var->name_length);
             // Get response text
-            snprint_value(str_bufp, str_buf_len, vars->name, vars->name_length, vars);
+            snprint_value(str_bufp, str_buf_len, var->name, var->name_length, var);
 
             // Append Python tuple (type, oid, response) to list
             //PyList_Append(var_list, Py_BuildValue("(iss)", vars->type, mib_bufp, str_bufp));
-            zmsg_addstrf(_zmqmsg, "%s|%s", mib_bufp, str_bufp);
+            zmsg_addstrf(_zmqmsg, "%s|%s|%s", mib_bufp, __get_type_str(var), str_bufp);
         }
     }
     //PyObject_CallFunction(_cb, "iiisO", proc_id, operation, reqid, ss->peername, var_list ? var_list : Py_BuildValue("i", 0));
