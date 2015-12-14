@@ -69,8 +69,11 @@ __py_attr_set_string(PyObject *obj, char *attr_name,
 }
 
 char *
-__get_type_str (int type)
+__get_type_str (netsnmp_variable_list *var)
 {
+   int hex = 0, x = 0;
+   u_char *cp;
+   int type = var->type;
    char *str;
    switch (type) {
     case ASN_BOOLEAN:
@@ -83,7 +86,15 @@ __get_type_str (int type)
             str = "BITSTR";
             break;
     case ASN_OCTET_STR:
-            str = "STRING";
+            // Check for any non-printable/non-space character, and mark as hex
+            // altered slightly from netsnmp/mib.c:sprint_realloc_octet_string
+            for (cp = var->val.string, x = 0; x < (int) var->val_len; x++, cp++) {
+                 if (!isprint(*cp) && !isspace(*cp)) {
+                     hex = 1;
+                     break;
+                 }
+            }
+            str = hex ? "Hex-STRING" : "STRING";
             break;
     case ASN_NULL:
             str = "NULL";

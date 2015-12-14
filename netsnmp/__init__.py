@@ -68,6 +68,18 @@ def snmp_compare_oid(oid1, oid2):
         return True
     return False
 
+def snmp_hex2str(hexstr):
+    """
+    Helper func to convert various types of hex-strings, determined by length
+    """
+
+    _hexstr = "".join(hexstr.split()).replace('"', '')
+
+    if len(_hexstr)==12:
+        # Return formatted MAC address
+        return "%s:%s:%s:%s:%s:%s" % tuple(
+                [part.upper() for part in (_hexstr[:2], _hexstr[2:4], _hexstr[4:6], _hexstr[6:8], _hexstr[8:10], _hexstr[10:12])])
+
 class SNMPSession(object):
     """
     Session based, thread-safe interface

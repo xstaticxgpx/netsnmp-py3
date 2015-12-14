@@ -15,7 +15,7 @@ void *__py_attr_void_ptr (PyObject *obj, char *attr_name);
 int __py_attr_get_string (PyObject *obj, char *attr_name, char **val, Py_ssize_t *len);
 int __py_attr_set_string (PyObject *obj, char *attr_name, char *val, size_t len);
 
-char *__get_type_str     (int type);
+char *__get_type_str     (netsnmp_variable_list *var);
 
 /* Synchronous(thread-safe) implementations */
 PyObject *create_session (PyObject *self, PyObject *args);
