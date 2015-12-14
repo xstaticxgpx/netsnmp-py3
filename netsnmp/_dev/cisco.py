@@ -9,21 +9,21 @@ class SNMPCiscoDevice(SNMPDevice):
         # Sorted list of set(name, oid)
         self._oids = [
             ('sysDescr', '.1.3.6.1.2.1.1.1.0'),
-            #('sysUptime', '.1.3.6.1.2.1.1.3.0'),
+            ('sysUptime', '.1.3.6.1.2.1.1.3.0'),
         ]
 
         if oids:
-            assert type(oids) == list
-            # Append any extra OIDs
+            # Append any extra OIDs passed
             self._oids+=oids
         SNMPDevice.__init__(self, oids=self._oids)
 
     # For demonstration purposes, this is how we can parse oids different in subclass
     def parse_oids(self, response):
-        _vars = [var.split('=', maxsplit=1) for var in response]
+        # Responses come back as pipe delimited OID|VALUE
+        _vars = [tuple(var.split('|', maxsplit=1)) for var in response]
 
         # This is where we vary from SNMPDevice
         # e.g., remove double quotes from string responses
-        _vars = [(oid, value.replace('"', '')) for (oid, value) in _vars]
+        _vars = [(oid, value.replace('"', '')) for oid, value in _vars]
 
-        return {self._oid2str[oid]: value for (oid, value) in _vars}
+        return {self._oid2str[oid]: value for oid, value in _vars}

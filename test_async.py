@@ -55,7 +55,6 @@ ZMQ_IN  = "ipc:///tmp/%s_in" % cmdname
 ZMQ_OUT = "ipc:///tmp/%s_out" % cmdname
 
 ## SNMP
-
 SNMP_RETRIES=1
 # SNMP timeout is in milliseconds
 SNMP_TIMEOUT=250
@@ -120,7 +119,7 @@ def ZMQProcessor(success, timeout, oidcount):
             # Parse OIDs
             _vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
             _oidcount+=len(_vars)
-            log.debug(_vars)
+            #log.debug(_vars)
             #try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -137,8 +136,6 @@ def ZMQProcessor(success, timeout, oidcount):
             _timeout+=1
 
     #_redis.execute()
-    end = time.perf_counter()
-    elapsed = end-start
     # Counter rollup
     with success.get_lock():
         success.value+=_success
@@ -147,6 +144,8 @@ def ZMQProcessor(success, timeout, oidcount):
     with oidcount.get_lock():
         oidcount.value+=_oidcount
 
+    end = time.perf_counter()
+    elapsed = end-start
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
     log.info('%s', _type_count)
 
@@ -171,13 +170,7 @@ def ZMQStreamer(running):
 
 if __name__ == '__main__':
 
-    # example list for get_async
-    #hosts = [
-    #('HOST_OR_IP', 'community', ['1.3.6.1.2.1.1.1.0', '1.3.6.1.2.1.1.3.0']),
-    #('udp6:[IP]:161', 'community', ['1.3.6.1.2.1.1.1.0'])
-    #]
-
-    db = DB['db']
+    #db = DB['db']
     #dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
 
     logging.basicConfig(level=logging.DEBUG,
@@ -194,31 +187,16 @@ if __name__ == '__main__':
     # Overwrite handlers to only utilize QueueHandler()
     log.handlers = [log_async,]
 
-    query = '''\
-SELECT \
-IP \
-FROM DB WHERE \
-IP IS NOT NULL AND \
-IP NOT IN ('null', 'NOSUCHOBJECT') AND \
-LAST_POLL >= SYSDATE - INTERVAL '5' DAY AND \
-ROWNUM <= 1000000\
-'''
-    community='public'
-
-    #select = dbh.cursor()
-    #select.arraysize = 4096
-    
     hosts = []
-
     # Absolute start timer
     _start = time.time()
     # Step timer
     start = time.perf_counter()
     [hosts.append(
         #peername str, community str, devtype str, devtype class instance
-        (host, community, '__default__', SNMP_DEVTYPES['__default__'])
+        (host, 'public', host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')]#*20000]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
@@ -339,6 +317,8 @@ ROWNUM <= 1000000\
         zmq_sentinel.connect(ZMQ_IN)
         for _ in range(ZMQ_PROCESSORS):
             zmq_sentinel.send(b'_sentinel')
+            # This may help ensure each send above reaches a unique ZMQ_PROCCESSOR
+            time.sleep(0.001)
         zmq_sentinel.close()
 
         # Wait for ZMQProcessor(s) to complete
