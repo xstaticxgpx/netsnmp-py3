@@ -15,18 +15,18 @@
 /* Global counters */
 static int active_hosts = 0;
 /* Global ZeroMQ pointers */
-zctx_t *zmq_ctx;
-void *zmq_push;
+static zctx_t *zmq_ctx;
+static void *zmq_push;
 
 static netsnmp_callback *
 get_async_cb(int operation, netsnmp_session *ss, int reqid,
                 netsnmp_pdu *pdu, void *magic)
 {
     netsnmp_variable_list *vars;
-    zmsg_t *zmqmsg = zmsg_new();
+    zmsg_t *_zmqmsg = zmsg_new();
     size_t out_len = 0;
     int buf_over = 0;
-    char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
+    u_char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
     size_t mib_buf_len = -1;
     char str_buf[SPRINT_MAX_LEN], *str_bufp = str_buf;
     size_t str_buf_len = SPRINT_MAX_LEN;
@@ -38,18 +38,18 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
     if (_debug_level) {
         printf("### callback op:%d", operation);
         printf(" reqid:%d", reqid);
-        printf(" host:%s magic:%s\n", ss->peername, _devtype);
+        printf(" host:%s magic:\"%s\"\n", ss->peername, _devtype);
     }
 
-    zmsg_addstrf(zmqmsg, "%d", operation);
-    zmsg_addstrf(zmqmsg, "%s", ss->peername);
-    zmsg_addstrf(zmqmsg, "%s", _devtype);
+    zmsg_addstrf(_zmqmsg, "%d", operation);
+    zmsg_addstrf(_zmqmsg, "%s", ss->peername);
+    zmsg_addstrf(_zmqmsg, "%s", _devtype);
     if (operation == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE) {
         //var_list = PyList_New(0);
         for (vars = pdu->variables; vars; vars = vars->next_variable, out_len = 0) {
 
             // Get response OID
-            netsnmp_sprint_realloc_objid((u_char **)&mib_bufp, &mib_buf_len,
+            netsnmp_sprint_realloc_objid(&mib_bufp, &mib_buf_len,
                                          &out_len, 1, &buf_over,
                                          vars->name, vars->name_length);
             // Get response text
@@ -57,14 +57,14 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
 
             // Append Python tuple (type, oid, response) to list
             //PyList_Append(var_list, Py_BuildValue("(iss)", vars->type, mib_bufp, str_bufp));
-            zmsg_addstrf(zmqmsg, "%s=%s", mib_bufp, str_bufp);
+            zmsg_addstrf(_zmqmsg, "%s=%s", mib_bufp, str_bufp);
         }
     }
     //PyObject_CallFunction(_cb, "iiisO", proc_id, operation, reqid, ss->peername, var_list ? var_list : Py_BuildValue("i", 0));
     //zstr_sendf(zmq_push, "{\"pid\":%d,\"op\":%d,\"host\":\"%s\"}", proc_id, operation, ss->peername);
-    zmsg_send(&zmqmsg, zmq_push);
+    zmsg_send(&_zmqmsg, zmq_push);
     active_hosts--;
-    return (void *)1;
+    return (void *)SUCCESS;
 }
 
 PyObject *
@@ -82,7 +82,6 @@ get_async(PyObject *self, PyObject *args)
   int ZMQ_HWM;
   char *ZMQ_IN;
   int rc;
-  int linger = -1;
   //PyObject *py_callback;
   int fds = 0, block = 1;
   netsnmp_large_fd_set lfdset;
@@ -97,12 +96,13 @@ get_async(PyObject *self, PyObject *args)
     _debug_level = 0;
 
     zmq_ctx = zctx_new();
-    zctx_set_linger(zmq_ctx, linger);
+    int zmq_linger = -1;
+    zctx_set_linger(zmq_ctx, zmq_linger);
     zmq_push = zsocket_new(zmq_ctx, ZMQ_PUSH);
     zmq_setsockopt(zmq_push, ZMQ_SNDHWM, &ZMQ_HWM, sizeof(&ZMQ_HWM));
 
     rc = zsocket_connect(zmq_push, "%s", ZMQ_IN); assert (rc == 0);
-    if (_debug_level) printf("### %s (%d) [%s]\n", ZMQ_IN, rc, zsocket_type_str(zmq_push));
+    if (_debug_level) printf("### %s (%d) [ZMQ_%s]\n", ZMQ_IN, rc, zsocket_type_str(zmq_push));
 
     //ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
     snmp_set_do_debugging(0);
@@ -136,11 +136,11 @@ get_async(PyObject *self, PyObject *args)
       }
       char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
       char *comm = PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
-      // This string is passed as callback magic below
-      // helps us quickly correlate devtype class instance after callback
+      // devtype string is passed as callback magic below
+      // helps us quickly correlate devtype class instance via get_async_cb ZeroMQ messages
       char *devtype = PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
-      // Get "oids" list attribute from the SNMPDevice class/subclass object
       PyObject *devtype_class = PyTuple_GetItem(host, 3);
+      // Get "oids" list attribute from the SNMPDevice class/subclass object
       PyObject *oids = PyObject_GetAttrString(devtype_class, "oids");
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
@@ -158,6 +158,7 @@ get_async(PyObject *self, PyObject *args)
 
       sess.version       = SNMP_VERSION_2c;
       sess.peername      = name;
+      // milliseconds to microseconds
       sess.timeout       = timeout*1000;
       sess.retries       = retries;
       sess.community     = (u_char *)comm;
@@ -214,5 +215,5 @@ get_async(PyObject *self, PyObject *args)
     snmp_close_sessions();
     // Close ZeroMQ context
     zctx_destroy(&zmq_ctx);
-    return Py_BuildValue("i", 1);
+    return Py_BuildValue("i", SUCCESS);
 }

@@ -70,5 +70,5 @@ close_session(PyObject *self, PyObject *args)
     if (_debug_level) printf("### closing session at %p\n", ss);
     snmp_sess_close(ss);
 
-    return Py_BuildValue("i", 1);
+    return Py_BuildValue("i", SUCCESS);
 }

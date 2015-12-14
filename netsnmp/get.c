@@ -17,7 +17,7 @@ get(PyObject *self, PyObject *args)
   netsnmp_variable_list *var;
   size_t oid_arr_len;
   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
-  char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
+  u_char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
   size_t mib_buf_len = -1;
   char str_buf[SPRINT_MAX_LEN], *str_bufp = str_buf;
   size_t str_buf_len = SPRINT_MAX_LEN;
@@ -38,6 +38,7 @@ get(PyObject *self, PyObject *args)
 
     ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
 
+    // GETNEXT flag
     next = PyObject_GetAttrString(session, "_next");
     if (next == Py_True) {
         pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
@@ -113,9 +114,7 @@ get(PyObject *self, PyObject *args)
                  *                              int *buf_overflow,
                  *                              const oid * objid, size_t objidlen)
                  */
-                //printf("%p\n", mib_bufp);
-                //printf("%d\n", out_len);
-                netsnmp_sprint_realloc_objid((u_char **)&mib_bufp, &mib_buf_len,
+                netsnmp_sprint_realloc_objid(&mib_bufp, &mib_buf_len,
                                              &out_len, 1, &buf_over,
                                              var->name, var->name_length);
 
@@ -147,5 +146,5 @@ get(PyObject *self, PyObject *args)
         //snmp_sess_close(ss);
     }
     //return responses ? responses : NULL;
-    return Py_BuildValue("i", 1);
+    return Py_BuildValue("i", SUCCESS);
 }
