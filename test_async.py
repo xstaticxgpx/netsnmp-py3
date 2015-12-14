@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from netsnmp._api import get_async
-from async_devtypes import *
+from async_devtypes import SNMP_DEVTYPES
 #import cx_Oracle
 import zmq
 import redis, hiredis
@@ -24,7 +24,7 @@ logging._levelToName = {
 
 # DB definitions
 DB = {
-    "apportal": {
+    "db": {
         'server': 'host',
         'port'  : '1521',
         'name'  : 'name',
@@ -43,7 +43,6 @@ MAX_PER_WORKER=4096
 
 # Number of ZMQ PULL processes to spawn
 ZMQ_PROCESSORS = int(MAX_WORKERS/2)
-zmq_processors = []
 
 # Time to pause for ZMQ initialization (Seconds)
 ZMQ_PAUSE=0.01
@@ -55,12 +54,6 @@ ZMQ_HWM=10000000
 ZMQ_IN  = "ipc:///tmp/%s_in" % cmdname
 ZMQ_OUT = "ipc:///tmp/%s_out" % cmdname
 
-# ZeroMQ Message Frame pointers ([OP, HOST, DEVTYPE, OIDS..])
-OP=0
-HOST=1
-DEVTYPE=2
-OIDS=3
-
 ## SNMP
 
 SNMP_RETRIES=1
@@ -68,11 +61,16 @@ SNMP_RETRIES=1
 SNMP_TIMEOUT=250
 #SNMP_TIMEOUT_DELTA=MAX_WORKERS
 
-# Messaging Intake/Processing
+# Response callback message intake/processing
 def ZMQProcessor(success, timeout, oidcount):
     """
-    Intake work via ZeroMQ socket and queue for processing after _sentinel is signaled
+    Intake work via ZeroMQ IPC socket and queue for processing after _sentinel is signaled
     """
+    # ZeroMQ Message Frame pointers ([OP, HOST, DEVTYPE, OIDS..])
+    OP=0
+    HOST=1
+    DEVTYPE=2
+    OIDS=3
 
     _type_count = {}
     # Local counters, rolled up into mp.Value at end
@@ -123,31 +121,34 @@ def ZMQProcessor(success, timeout, oidcount):
             _vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
             _oidcount+=len(_vars)
             #log.debug(_vars)
-            try: 
+            #try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
                 #             vars)
-                i+=1
-            except redis.exceptions.RedisError as e:
-                log.debug('redis exception: %s' % (str(e).strip()))
-                continue
+                #i+=1
+            #except redis.exceptions.RedisError as e:
+                #log.debug('redis exception: %s' % (str(e).strip()))
+                #continue
             # Flush redis pipeline periodically
-            if i > 4095:
+            #if i > 4095:
                 #_redis.execute()
-                i=0
+                #i=0
         elif response[OP] == '2':
             _timeout+=1
+
     #_redis.execute()
     end = time.perf_counter()
     elapsed = end-start
+    # Counter rollup
     with success.get_lock():
         success.value+=_success
     with timeout.get_lock():
         timeout.value+=_timeout
     with oidcount.get_lock():
         oidcount.value+=_oidcount
+
     log.info('Finished processing %d responses in %.3fs' % (qsize, elapsed))
-    log.debug('%s', _type_count)
+    log.info('%s', _type_count)
 
 # Messaging Pipeline
 def ZMQStreamer(running):
@@ -176,7 +177,7 @@ if __name__ == '__main__':
     #('udp6:[IP]:161', 'community', ['1.3.6.1.2.1.1.1.0'])
     #]
 
-    db = DB['apportal']
+    db = DB['db']
     #dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
 
     logging.basicConfig(level=logging.DEBUG,
@@ -215,9 +216,9 @@ ROWNUM <= 1000000\
     start = time.perf_counter()
     [hosts.append(
         #peername str, community str, devtype str, devtype class instance
-        (host, community, host, SNMP_DEVTYPES[host])
+        (host, community, '__default__', SNMP_DEVTYPES['__default__'])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*10000]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20000]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
@@ -248,6 +249,7 @@ ROWNUM <= 1000000\
             raise RuntimeError("ZMQStreamer failed to initialize")
 
         # Spin up ZeroMQ Processors
+        zmq_processors = []
         for i in range(ZMQ_PROCESSORS):
             zmq_processors.append(
                 mp.Process(target=ZMQProcessor,
@@ -268,12 +270,12 @@ ROWNUM <= 1000000\
         i=0
         # While any hosts or workers exist
         start = time.perf_counter()
+        _timeout = SNMP_TIMEOUT
         while hosts or active_workers:
             pids = []
             remaining = total-i
             if hosts and len(active_workers) < MAX_WORKERS:
                 #_timeout = SNMP_TIMEOUT+random.randint(p%2, SNMP_TIMEOUT_DELTA)
-                _timeout = SNMP_TIMEOUT
                 _upper = i+MAX_PER_WORKER if remaining > MAX_PER_WORKER else i+remaining
                 log.debug('Defining process for range %d:%d (%dms)' % (i, _upper, _timeout))
 
@@ -309,7 +311,7 @@ ROWNUM <= 1000000\
                     else:
                         active_workers.remove(proc)
                         if proc.exitcode == 0:
-                            log.info('%d - Process finished' % proc.pid)
+                            log.debug('%d - Process finished' % proc.pid)
                         else:
                             log.error('%d - Process failed (%d)' % (proc.pid, proc.exitcode))
                         # if processes take variable amount of time, might want to break and loop to start a new process
@@ -326,9 +328,11 @@ ROWNUM <= 1000000\
         log.critical("%s", e)
 
     except SystemExit:
+        # Exit with success
+
         end = time.perf_counter()
         elapsed = end-start
-        log.debug('Polling completed in %.3fs' % elapsed)
+        log.info('Polling completed in %.3fs' % elapsed)
 
         # Signal end to ZMQProcessor(s)
         zmq_sentinel = zmq.Context().socket(zmq.PUSH)
@@ -349,10 +353,11 @@ ROWNUM <= 1000000\
         log.info('%.2f oids/sec' % (oidcount.value/elapsed))
         log.info('%.2f reqs/sec' % ((success.value+timeout.value)/elapsed))
 
+    finally:
+
         _end = time.time()
         _elapsed = _end-_start
         log.info('total time taken %.3fs' % _elapsed)
 
-    finally:
         # Ensure logging is flushed
         log_queue.stop()
