@@ -120,7 +120,7 @@ def ZMQProcessor(success, timeout, oidcount):
             # Parse OIDs
             _vars = SNMP_DEVTYPES[response[DEVTYPE]].parse_oids(response[OIDS:])
             _oidcount+=len(_vars)
-            #log.debug(_vars)
+            log.debug(_vars)
             #try: 
                 #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                 #_redis.hmset(response[HOST] if not response[HOST].startswith("udp6") else response[HOST].replace("udp6:[", "").replace("]", ""),
@@ -218,7 +218,7 @@ ROWNUM <= 1000000\
         #peername str, community str, devtype str, devtype class instance
         (host, community, '__default__', SNMP_DEVTYPES['__default__'])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*20000]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')]#*20000]
     #log.debug(hosts)
     #select.close()
     #dbh.close()
