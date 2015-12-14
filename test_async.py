@@ -194,9 +194,10 @@ if __name__ == '__main__':
     start = time.perf_counter()
     [hosts.append(
         #peername str, community str, devtype str, devtype class instance
+        #(host, 'public', '__default__', SNMP_DEVTYPES['__default__'])
         (host, 'public', host, SNMP_DEVTYPES[host])
         #(host, community, 'archt', SNMPDevice_archt)
-    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*200]
+    ) for host in ('archt01', 'archt02', 'archt03', 'archt04', 'archt05')*2000]
     #log.debug(hosts)
     #select.close()
     #dbh.close()

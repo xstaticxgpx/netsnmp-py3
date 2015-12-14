@@ -2,6 +2,7 @@
 
 from netsnmp import *
 from netsnmp._api import SNMPError
+import binascii
 import sys, time
 
 if __name__ == '__main__':
@@ -15,7 +16,8 @@ if __name__ == '__main__':
         [sys.argv.append(op) for op in ('get', 'getnext', 'walk')]
 
     if 'get' in sys.argv[1:]:
-        oids = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0']
+        oids = ['.1.3.6.1.2.1.1.1.0', '.1.3.6.1.2.1.1.3.0', '.1.3.6.1.2.1.1.5.0', '.1.3.6.1.2.1.55.1.5.1.8.2']
+        #oids = [oids.pop(),]
         start = time.perf_counter()
         print('SNMP GET on %s' % oids)
         for host in ips:
@@ -25,7 +27,17 @@ if __name__ == '__main__':
                 with SNMPSession(host, 'public', debug=1) as ss:
                     responses = ss.get(oids)
                     print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
-                    [print("[%s] %s = %s: %s" % (host, oid[OID], oid[TYPE], oid[VALUE])) for oid in responses]
+                    # example including conversion of hex-string:
+                    for oid in responses:
+                        _type, _value = snmp_hex2str(oid[TYPE], oid[VALUE])
+                        print("[%s] %s = %s: %s" % (host, oid[OID], _type, _value))
+                    #    if oid[OID] == ".1.3.6.1.2.1.25.1.2.0" or oid[OID] == ".1.3.6.1.2.1.55.1.5.1.8.2":
+                    #        print("HEX2STR func:", snmp_hex2str(oid[VALUE]))
+                             #for char in b'07 DF 0C 0E 04 1D 11 00 2D 05 00 '.split(): ord(binascii.unhexlify(char))
+                             #year1, year2, month, day, hour, minute, second, _, _, _, _   = [ord(binascii.unhexlify(char)) for char in oid[VALUE].replace('"', '').split()]
+
+
+
     
                 # Non-context
                 #ss = SNMPSession(host, 'public', debug=1)
@@ -49,7 +61,7 @@ if __name__ == '__main__':
         print()
 
     if 'getnext' in sys.argv[1:]:
-        oids = ['.1.3.6.1.2.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
+        oids = ['.1.3.6.1.2.1.1', '.1.3.6.1.2.1.1.2.0', '.1.3.6.1.2.1.1.4.0']
         start = time.perf_counter()
         print('SNMP GETNEXT on %s' % oids)
         for host in ips:
@@ -74,7 +86,7 @@ if __name__ == '__main__':
         print()
 
     if 'walk' in sys.argv[1:]:
-        oids = ['.1.3.6.1.2.1.1']
+        oids = ['.1']
         start = time.perf_counter()
         print('SNMP WALK on %s' % oids)
         for host in ips[:1]:
