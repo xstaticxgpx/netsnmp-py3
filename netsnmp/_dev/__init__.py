@@ -25,6 +25,6 @@ class SNMPDevice(object):
         # Using this method we can alter parsing logic in subclasses
 
         # Responses come back as pipe delimited OID|TYPE|VALUE
-        _vars = [tuple(var.split('|', maxsplit=2)) for var in response]
+        _vars = [tuple(var.split('|', maxsplit=1)) for var in response]
 
-        return {self._oid2str[oid]: (type, value) for oid, type, value in _vars}
+        return {self._oid2str[oid]: value for oid, value in _vars}
