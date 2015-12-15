@@ -57,8 +57,8 @@ get_async_cb(int operation, netsnmp_session *ss, int reqid,
 
             // Append Python tuple (type, oid, response) to list
             //PyList_Append(var_list, Py_BuildValue("(iss)", vars->type, mib_bufp, str_bufp));
-            //zmsg_addstrf(_zmqmsg, "%s|%s|%s", mib_bufp, __get_type_str(var), str_bufp);
-            zmsg_addstrf(_zmqmsg, "%s|%s", mib_bufp, str_bufp);
+            zmsg_addstrf(_zmqmsg, "%s|%s|%s", mib_bufp, __get_type_str(var), str_bufp);
+            //zmsg_addstrf(_zmqmsg, "%s|%s", mib_bufp, str_bufp);
         }
     }
     //PyObject_CallFunction(_cb, "iiisO", proc_id, operation, reqid, ss->peername, var_list ? var_list : Py_BuildValue("i", 0));

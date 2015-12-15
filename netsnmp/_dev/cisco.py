@@ -36,6 +36,6 @@ class SNMPCiscoDevice(SNMPDevice):
         # This is where we vary from SNMPDevice
         # e.g., remove double quotes from string responses and work on _hexconvert oids
         _vars = [(oid,
-                  snmp_hex2str('Hex', value)[1] if oid in self._hexconvert else value.replace('"', '')) for oid, value in _vars]
+                  snmp_hex2str(type, value)[1] if oid in self._hexconvert else value.replace('"', '')) for oid, type, value in _vars]
 
         return {self._oid2str[oid]: value for oid, value in _vars}
