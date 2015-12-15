@@ -29,6 +29,7 @@ SNMP WALK (load averages)
 
 #import netsnmp._api as netsnmp
 from . import _api as netsnmp
+import binascii
 
 class SNMPRuntimeError(netsnmp.SNMPError): # pylint: disable=no-init
     """
@@ -73,15 +74,27 @@ def snmp_hex2str(type, value):
     Helper func to convert various types of hex-strings, determined by length
     """
 
-    if not "Hex" in type:
+    try:
+        # Sanity check, go directly to `finally`
+        if not "Hex" in type:
+            raise Exception
+
+        # Remove quotes and cut off space at end
+        _hexstr = value.replace('"', '')[:-1]
+    
+        if len(_hexstr)==17:
+            # Return formatted MAC address
+            type = "MacAddress"
+            value = '%s:%s:%s:%s:%s:%s' % tuple(_hexstr.split())
+    
+        elif len(_hexstr)==11:
+            # Convert to octal IP
+            type = "IpAddress"
+            value = "%d.%d.%d.%d" % tuple(
+                    [ord(binascii.unhexlify(part)) for part in _hexstr.split()])
+
+    finally:
         return (type, value)
-
-    _hexstr = "".join(value.split()).replace('"', '')
-
-    if len(_hexstr)==12:
-        # Return formatted MAC address
-        return ("MAC-Address", "%s:%s:%s:%s:%s:%s" % tuple(
-                [part.upper() for part in (_hexstr[:2], _hexstr[2:4], _hexstr[4:6], _hexstr[6:8], _hexstr[8:10], _hexstr[10:12])]))
 
 class SNMPSession(object):
     """

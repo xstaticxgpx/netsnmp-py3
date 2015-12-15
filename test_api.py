@@ -2,7 +2,6 @@
 
 from netsnmp import *
 from netsnmp._api import SNMPError
-import binascii
 import sys, time
 
 if __name__ == '__main__':
@@ -29,7 +28,7 @@ if __name__ == '__main__':
                     print('[%s] received %d responses in %02fms' % (host, len(responses), (time.perf_counter()-_start)*1000))
                     # example including conversion of hex-string:
                     for oid in responses:
-                        _type, _value = snmp_hex2str(oid[TYPE], oid[VALUE])
+                        _type, _value = snmp_hex2str(oid[TYPE], oid[VALUE]) #if oid[TYPE]=="Hex-STRING" else (oid[TYPE], oid[VALUE])
                         print("[%s] %s = %s: %s" % (host, oid[OID], _type, _value))
                     #    if oid[OID] == ".1.3.6.1.2.1.25.1.2.0" or oid[OID] == ".1.3.6.1.2.1.55.1.5.1.8.2":
                     #        print("HEX2STR func:", snmp_hex2str(oid[VALUE]))
