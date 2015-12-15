@@ -5,13 +5,14 @@ from netsnmp._dev import cisco
 SNMP_DEVTYPES = {
         'archt01': cisco.SNMPCiscoDevice([
             ('sysHostname', '.1.3.6.1.2.1.1.5.0'),
-        ]),
+            ('HexMacAddr', '.1.3.6.1.2.1.55.1.5.1.8.2'),
+        ]), #hexconvert=['.1.3.6.1.2.1.55.1.5.1.8.2']), Define hexconvert here or in SNMPCiscoDevice class
         'archt02': cisco.SNMPCiscoDevice(),
         'archt03': cisco.SNMPCiscoDevice([
             ('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
             #('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
             #('15min', '.1.3.6.1.4.1.2021.10.1.3.3'),
-            ]),
+        ]),
         'archt04': cisco.SNMPCiscoDevice([
             #('1min', '.1.3.6.1.4.1.2021.10.1.3.1'),
             ('5min', '.1.3.6.1.4.1.2021.10.1.3.2'),
