@@ -318,8 +318,6 @@ if __name__ == '__main__':
         zmq_sentinel.connect(ZMQ_IN)
         for _ in range(ZMQ_PROCESSORS):
             zmq_sentinel.send(b'_sentinel')
-            # This may help ensure each send above reaches a unique ZMQ_PROCESSOR
-            time.sleep(0.001)
         zmq_sentinel.close()
 
         # Wait for ZMQProcessor(s) to complete
