@@ -57,8 +57,8 @@ ZMQ_OUT = "ipc:///tmp/%s_out" % cmdname
 ## SNMP
 SNMP_RETRIES=1
 # SNMP timeout is in milliseconds
-SNMP_TIMEOUT=250
-#SNMP_TIMEOUT_DELTA=MAX_WORKERS
+SNMP_TIMEOUT=500
+SNMP_TIMEOUT_DELTA=MAX_WORKERS
 
 # Response callback message intake/processing
 def ZMQProcessor(success, timeout, oidcount):
@@ -254,7 +254,7 @@ if __name__ == '__main__':
             pids = []
             remaining = total-i
             if hosts and len(active_workers) < MAX_WORKERS:
-                #_timeout = SNMP_TIMEOUT+random.randint(p%2, SNMP_TIMEOUT_DELTA)
+                _timeout = int(SNMP_TIMEOUT+random.randint(p%2, SNMP_TIMEOUT_DELTA))
                 _upper = i+MAX_PER_WORKER if remaining > MAX_PER_WORKER else i+remaining
                 log.debug('Defining process for range %d:%d (%dms)' % (i, _upper, _timeout))
 
