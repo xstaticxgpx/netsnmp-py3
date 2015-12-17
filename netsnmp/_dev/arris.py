@@ -3,7 +3,7 @@
 from . import SNMPDevice
 from netsnmp import snmp_hex2str
 
-class SNMPCiscoDevice(SNMPDevice):
+class SNMPArrisDevice(SNMPDevice):
 
     def __init__(self, oids=[], hexconvert=[]):
 
@@ -11,7 +11,12 @@ class SNMPCiscoDevice(SNMPDevice):
         self._oids = []
         
         # Set of OIDs that require manual hex conversion
-        self._hexconvert = []
+        self._hexconvert = [
+            # secRemoteHost
+            '.1.3.6.1.4.1.4115.1.20.1.1.1.19.1.1.6.1',
+            # bssADDR24
+            '.1.3.6.1.4.1.4115.1.20.1.1.3.22.1.1.3',
+        ]
 
         if oids:
             # Append any extra OIDs passed
@@ -26,8 +31,8 @@ class SNMPCiscoDevice(SNMPDevice):
     # For demonstration purposes, this is how we can parse oids different in subclass
     def parse_oids(self, response):
         # Responses come back as pipe delimited OID|TYPE|VALUE
-        #_vars = [tuple(var.replace('"', '').split('|', maxsplit=2)) for var in response]
         _vars = (var.split('|', maxsplit=2) for var in response)
+
         # This is where we vary from SNMPDevice
         # e.g., create genexpr to work on _hexconvert oids
         _vars = ((oid,
