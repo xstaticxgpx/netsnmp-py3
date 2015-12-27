@@ -2,7 +2,7 @@
 
 from netsnmp._api import get_async
 from async_devtypes import SNMP_DEVTYPES
-import cx_Oracle
+#import cx_Oracle
 import zmq
 import redis, hiredis
 import logging, logging.handlers
@@ -39,11 +39,11 @@ DB = {
 #http://comments.gmane.org/gmane.comp.security.firewalls.netfilter.devel/29993
 # Ceiling is around 8 * 4096 = 32768 max requests at any given time
 # or 4096*12 = 3072*16 = 49152
-MAX_WORKERS = 16
-MAX_PER_WORKER = 3072
+MAX_WORKERS = 4
+MAX_PER_WORKER = 4096
 
 # Number of ZMQ PULL processes to spawn
-ZMQ_PROCESSORS = 8
+ZMQ_PROCESSORS = 2
 
 # Time to pause for ZMQ initialization (Seconds)
 ZMQ_PAUSE=0.01
@@ -162,8 +162,8 @@ def ZMQStreamer(running):
 
 if __name__ == '__main__':
 
-    db = DB['db']
-    dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
+    #db = DB['db']
+    #dbh = cx_Oracle.connect('%s/%s@%s/%s' % (db['user'], db['pass'], db['server'], db['name']))
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s.%(msecs)03dZ [%(processName)s/%(levelname)s] %(message)s',
@@ -179,11 +179,14 @@ if __name__ == '__main__':
     # Overwrite handlers to only utilize QueueHandler()
     log.handlers = [log_async,]
 
-    select = dbh.cursor()
-    select.arraysize = 4096
+    #select = dbh.cursor()
+    #select.arraysize = 4096
 
     query = "select something from somewhere"
     community = "public"
+
+    CM_IP = 0
+    MODEL = 1
 
     # Absolute start timer
     _start = time.time()
@@ -195,9 +198,9 @@ if __name__ == '__main__':
          community,
          host[MODEL] if host[MODEL] in SNMP_DEVTYPES else '__other__',
          SNMP_DEVTYPES[host[MODEL]] if host[MODEL] in SNMP_DEVTYPES else SNMP_DEVTYPES['__other__']
-         ) for host in select.execute(query)]
-    select.close()
-    dbh.close()
+         ) for host in (('archt01', 'other'), ('archt02', 'other'), ('archt03', 'other'), ('archt04', 'other'), ('archt05', 'other'))*20000]
+    #select.close()
+    #dbh.close()
     total = len(hosts)
     end = time.perf_counter()
     log.info('got %d hosts from DB in %.3fms' % (total, (end-start)*1000))
