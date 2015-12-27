@@ -144,3 +144,48 @@ __get_type_str (netsnmp_variable_list *var)
    }
    return str;
 }
+
+PyObject *
+build_pdu(PyObject *self, PyObject *args)
+{
+   char *_oidstr;
+   size_t oid_arr_len = MAX_OID_LEN;
+   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
+   PyObject *oids;
+   PyObject *oids_iter;
+   PyObject *var;
+   netsnmp_pdu *pdu;
+   netsnmp_session nullss;
+
+   if (!PyArg_ParseTuple(args, "O", &oids)) {
+       PyErr_Format(SNMPError, "build_pdu: unable to parse args tuple\n");
+       return NULL;
+   }
+
+   //snmp_set_do_debugging(0);
+   // Need to initialize session before OIDs can be parsed
+   snmp_disable_stderrlog();
+   netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_DONT_PERSIST_STATE, 1);
+   netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_DISABLE_PERSISTENT_LOAD, 1);
+   netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_DISABLE_PERSISTENT_SAVE, 1);
+   netsnmp_set_mib_directory("/dev/null");
+   set_configuration_directory("/dev/null");
+   snmp_sess_init(&nullss);
+
+   pdu = snmp_pdu_create(SNMP_MSG_GET);
+
+   for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
+       _oidstr = PyUnicode_AsUTF8(var);
+
+       if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
+           snmp_free_pdu(pdu);
+           PyErr_Format(SNMPError, "build_pdu: unknown object ID (%s)\n", (_oidstr ? _oidstr : "<null>"));
+           return NULL;
+       }
+       snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
+       Py_DECREF(var);
+   }
+   Py_DECREF(oids_iter);
+
+   return PyLong_FromVoidPtr((void *)pdu);
+}

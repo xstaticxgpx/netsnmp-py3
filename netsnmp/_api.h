@@ -28,3 +28,6 @@ PyObject *close_session  (PyObject *self, PyObject *args);
 //netsnmp_callback 
 //         *get_async_cb   (int operation, netsnmp_session *ss, int reqid, netsnmp_pdu *pdu, void *magic);
 PyObject *get_async      (PyObject *self, PyObject *args);
+
+/* Helper functions */
+PyObject *build_pdu      (PyObject *self, PyObject *args);

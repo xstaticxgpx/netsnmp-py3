@@ -19,6 +19,7 @@ static PyMethodDef APIMethods[] = {
     {"get", get, METH_VARARGS, get_docstring},
     {"get_async", get_async, METH_VARARGS, get_async_docstring},
     {"close_session", close_session, METH_VARARGS, close_session_docstring},
+    {"build_pdu", build_pdu, METH_VARARGS, "Build SNMP PDU object"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
