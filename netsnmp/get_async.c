@@ -74,10 +74,6 @@ get_async(PyObject *self, PyObject *args)
   PyObject *hosttuple;
   PyObject *host_iter;
   PyObject *host;
-  PyObject *oids_iter;
-  PyObject *var;
-  size_t oid_arr_len;
-  oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
   int timeout;
   int retries;
   int ZMQ_HWM;
@@ -140,8 +136,7 @@ get_async(PyObject *self, PyObject *args)
       // helps us quickly correlate devtype class instance back in Python via callback ZeroMQ message
       char *devtype = PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
       PyObject *devtype_class = PyTuple_GetItem(host, 3);
-      // Get "oids" list attribute from the SNMPDevice class/subclass object
-      //PyObject *oids = PyObject_GetAttrString(devtype_class, "oids");
+      // Get PDU void pointer from the SNMPDevice class/subclass object
       netsnmp_pdu *devtype_pdu = PyLong_AsVoidPtr(PyObject_GetAttrString(devtype_class, "pdu"));
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
@@ -149,14 +144,7 @@ get_async(PyObject *self, PyObject *args)
 
       snmp_sess_init(&sess);
 
-      req = snmp_clone_pdu(devtype_pdu);
-      //req = snmp_pdu_create(SNMP_MSG_GET);    /* build PDU */
-      /*for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
-          snmp_parse_oid(PyUnicode_AsUTF8((PyObject *)var), oid_arr_ptr, &oid_arr_len);
-          snmp_add_null_var(req, oid_arr_ptr, oid_arr_len);
-          Py_DECREF(var);
-      }
-      Py_DECREF(oids_iter);*/
+      req = snmp_clone_pdu(devtype_pdu); /* copy PDU */
 
       sess.version       = SNMP_VERSION_2c;
       sess.peername      = name;
