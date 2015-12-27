@@ -19,8 +19,8 @@ static zctx_t *zmq_ctx;
 static void *zmq_push;
 
 static netsnmp_callback *
-get_async_cb(int operation, netsnmp_session *ss, int reqid,
-                netsnmp_pdu *pdu, void *magic)
+_cb(int operation, netsnmp_session *ss, int reqid,
+    netsnmp_pdu *pdu, void *magic)
 {
     netsnmp_variable_list *var;
     zmsg_t *_zmqmsg = zmsg_new();
@@ -105,7 +105,6 @@ get_async(PyObject *self, PyObject *args)
     rc = zsocket_connect(zmq_push, "%s", ZMQ_IN); assert (rc == 0);
     if (_debug_level) printf("### %s (%d) [ZMQ_%s]\n", ZMQ_IN, rc, zsocket_type_str(zmq_push));
 
-    //ss = (netsnmp_session *)__py_attr_void_ptr(session, "sess_ptr");
     snmp_set_do_debugging(0);
     snmp_disable_stderrlog();
     snmp_set_quick_print(1);
@@ -138,24 +137,26 @@ get_async(PyObject *self, PyObject *args)
       char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
       char *comm = PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
       // devtype string is passed as callback magic below
-      // helps us quickly correlate devtype class instance via get_async_cb ZeroMQ messages
+      // helps us quickly correlate devtype class instance back in Python via callback ZeroMQ message
       char *devtype = PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
       PyObject *devtype_class = PyTuple_GetItem(host, 3);
       // Get "oids" list attribute from the SNMPDevice class/subclass object
-      PyObject *oids = PyObject_GetAttrString(devtype_class, "oids");
+      //PyObject *oids = PyObject_GetAttrString(devtype_class, "oids");
+      netsnmp_pdu *devtype_pdu = PyLong_AsVoidPtr(PyObject_GetAttrString(devtype_class, "pdu"));
 
       rc = asprintf(&snmp_open_err, "[%d] snmp_open %s", proc_id, name);
       rc = asprintf(&snmp_send_err, "[%d] snmp_send %s", proc_id, name);
 
       snmp_sess_init(&sess);
 
-      req = snmp_pdu_create(SNMP_MSG_GET);    /* build PDU */
-      for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
+      req = snmp_clone_pdu(devtype_pdu);
+      //req = snmp_pdu_create(SNMP_MSG_GET);    /* build PDU */
+      /*for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
           snmp_parse_oid(PyUnicode_AsUTF8((PyObject *)var), oid_arr_ptr, &oid_arr_len);
           snmp_add_null_var(req, oid_arr_ptr, oid_arr_len);
           Py_DECREF(var);
       }
-      Py_DECREF(oids_iter);
+      Py_DECREF(oids_iter);*/
 
       sess.version       = SNMP_VERSION_2c;
       sess.peername      = name;
@@ -164,7 +165,7 @@ get_async(PyObject *self, PyObject *args)
       sess.retries       = retries;
       sess.community     = (u_char *)comm;
       sess.community_len = strlen(comm);
-      sess.callback      = (netsnmp_callback)get_async_cb;
+      sess.callback      = (netsnmp_callback)_cb;
       sess.callback_magic= (void *)devtype;
 
       if (!(ss = snmp_open(&sess))) {
@@ -175,11 +176,8 @@ get_async(PyObject *self, PyObject *args)
         if (_debug_level) printf("### %d sent request to %s\n", proc_id, ss->peername);
         active_hosts++;
       } else {
-        // try again
-        //if (!(snmp_send(ss, req))) {
         snmp_perror(snmp_send_err);
         snmp_free_pdu(req);
-        //} else active_hosts++;
       }
       Py_DECREF(host);
     }
@@ -191,10 +189,8 @@ get_async(PyObject *self, PyObject *args)
       fds = 0, block = 1;
       struct timeval timeout;
   
-      //snmp_select_info(&fds, &fdset, &timeout, &block);
       snmp_select_info2(&fds, &lfdset, &timeout, &block);
       if (_debug_level) printf("### %d polling %d FDs\n", proc_id, fds);
-      //fds = select(fds, &fdset, NULL, NULL, block ? NULL : &timeout);
       //fds = select(fds, (&lfdset)->lfs_setptr, NULL, NULL, block ? NULL : &timeout);
       fds = netsnmp_large_fd_set_select(fds, &lfdset, NULL, NULL, block ? NULL : &timeout);
   
@@ -206,7 +202,6 @@ get_async(PyObject *self, PyObject *args)
       if (_debug_level) printf("### %d polled %d FDs\n", proc_id, fds);
   
       if (fds) {
-          //snmp_read(&fdset);
           snmp_read2(&lfdset);
       } else {
           snmp_timeout();
