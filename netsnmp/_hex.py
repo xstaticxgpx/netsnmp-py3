@@ -8,7 +8,7 @@ def snmp_hex2str(type, value):
     # Remove any surrounding quotes
     if value[0]=='"' and value[-1]=='"':
         # '"AB'" -> 'AB'
-        _hexstr = value[1:][:-1]
+        _hexstr = value[1:-1]
     else:
         _hexstr = value
 
@@ -55,6 +55,7 @@ def snmp_hex2str(type, value):
         (month, day, hour, minute, second, decisecond,
         utcdir, utchour, utcminute) = (ord(binascii.unhexlify(part)) for part in _hexstr.split()[2:])
 
+        # zero padded hour, minute, second
         value = '%d-%d-%d,%0#2d:%0#2d:%0#2d.%d,%s%s:%s' % (
                 year, month, day, hour, minute, second, decisecond, chr(utcdir), utchour, utcminute)
 
