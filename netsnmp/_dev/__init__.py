@@ -6,25 +6,24 @@ class SNMPDevice(object):
 
     def __init__(self, oids):
 
-        # Ensure oids is list object
-        # We expect OIDs to be an iterable of (name, oid) tuples
-        assert type(oids)==list
+        # Ensure oids is an iterable object
+        # We expect oids to be any iterable of (name, oid) tuples
+        assert type(oids)==set or \
+               type(oids)==list or \
+               type(oids)==tuple
 
         # Boilerplate
-        self._oid2str = {}
         self._str2oid = {}
-
-        # Do dict.update in order to allow subclass additions
-        # Build dictionary of {oid: str,}
+        self._oid2str = {}
+        ## Do dict.update in order to allow subclass additions
         self._str2oid.update(oids)
-        # Populate reverse dictionary of {str: oid,}
         self._oid2str.update({oid: name for (name, oid) in oids})
 
         # Perform set comprehension to remove any duplicate entries
-        self.oids = {oid for (name, oid) in oids}
+        self._oids = {oid for (name, oid) in oids}
 
         # Create PDU with the unique OIDs set, cloned by snmp_clone_pdu in get_async.c
-        self.pdu = build_pdu(self.oids)
+        self.pdu = build_pdu(self._oids)
 
     def parse_oids(self, response):
         # Using this method we can alter parsing logic in subclasses
