@@ -87,9 +87,9 @@ def ZMQProcessor(success, timeout, oidcount):
     ## Intake
 
     _redis = redis.Redis(host='127.0.0.1')
-    with _redis.pipeline() as _redis:
+    with _redis.pipeline() as _redispipe:
         i=0
-        # Pull via ZMQ and Queue
+        # Pull messages via ZMQ, process and ship to Redis
         while True:
             response = [frame.decode() for frame in incoming.recv_multipart()]
             if response[OP] == '_sentinel':
@@ -113,7 +113,7 @@ def ZMQProcessor(success, timeout, oidcount):
                 try: 
                     #log.debug("%s [%s] %s", response[HOST], response[DEVTYPE], vars)
                     # splice if ipv6
-                    _redis.hmset(response[HOST] if not response[HOST][:4]=="udp6" else response[HOST][6:][:-1],
+                    _redispipe.hmset(response[HOST] if not response[HOST][:4]=="udp6" else response[HOST][6:][:-1],
                                  _vars)
                     i+=1
                 except redis.exceptions.RedisError as e:
@@ -121,13 +121,13 @@ def ZMQProcessor(success, timeout, oidcount):
                     continue
                 # Flush redis pipeline periodically
                 if i > 4096:
-                    _redis.execute()
+                    _redispipe.execute()
                     i=0
 
             elif response[OP] == '2':
                 _timeout+=1
 
-        _redis.execute()
+        _redispipe.execute()
 
     # Counter rollup
     with success.get_lock():

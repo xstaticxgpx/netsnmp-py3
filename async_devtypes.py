@@ -86,10 +86,11 @@ SNMP_DEVTYPES = {
             ('radius_server2', '.1.3.6.1.2.1.67.1.2.1.1.3.1.2.2'),
             #('cm.software', '.1.3.6.1.4.1.15768.6.4.1.1.1.5.1'),
         ]),
-        '__other__': netsnmp._dev.SNMPDevice([
+        '__other__': cisco.SNMPCiscoDevice([
             ('sysDescr', '.1.3.6.1.2.1.1.1.0'),
             ('sysUptime', '.1.3.6.1.2.1.1.3.0'),
-        ]),
+            ('macAddr', '.1.3.6.1.2.1.55.1.5.1.8.2'),
+        ], hexconvert=['.1.3.6.1.2.1.55.1.5.1.8.2']),# Can define hexconvert here or in netsnmp/_dev/cisco.py, etc files
 }
 
 # Cisco pointers
