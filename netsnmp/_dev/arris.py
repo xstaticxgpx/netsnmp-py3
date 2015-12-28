@@ -25,7 +25,8 @@ class SNMPArrisDevice(SNMPDevice):
             # Append any extra OIDs requiring conversion
             # get unique set using bitwise or
             self._hexconvert = set(self._hexconvert) | set(hexconvert)
-            print(self._hexconvert)
+
+        # Instantiate from parent
         SNMPDevice.__init__(self, oids=self._oids)
 
     # For demonstration purposes, this is how we can parse oids different in subclass

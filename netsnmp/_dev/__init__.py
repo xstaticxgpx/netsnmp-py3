@@ -4,7 +4,7 @@ from netsnmp._api import build_pdu
 
 class SNMPDevice(object):
 
-    def __init__(self, oids):
+    def __init__(self, oids=[]):
 
         # Ensure oids is an iterable object
         # We expect oids to be any iterable of (name, oid) tuples
@@ -22,7 +22,8 @@ class SNMPDevice(object):
         # Perform set comprehension to remove any duplicate entries
         self._oids = {oid for (name, oid) in oids}
 
-        # Create PDU with the unique OIDs set, cloned by snmp_clone_pdu in get_async.c
+        # Create PDU with the unique OIDs set
+        # returns void pointer which is passed to snmp_clone_pdu in get_async.c
         self.pdu = build_pdu(self._oids)
 
     def parse_oids(self, response):

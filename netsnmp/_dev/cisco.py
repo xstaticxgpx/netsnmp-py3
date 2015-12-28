@@ -27,8 +27,8 @@ class SNMPCiscoDevice(SNMPDevice):
     # For demonstration purposes, this is how we can parse oids different in subclass
     def parse_oids(self, response):
         # Responses come back as pipe delimited OID|TYPE|VALUE
-        #_vars = [tuple(var.replace('"', '').split('|', maxsplit=2)) for var in response]
         _vars = (var.split('|', maxsplit=2) for var in response)
+
         # This is where we vary from SNMPDevice
         # e.g., create genexpr to work on _hexconvert oids
         _vars = ((oid,
