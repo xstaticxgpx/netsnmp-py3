@@ -346,3 +346,4 @@ if __name__ == '__main__':
 
         # Ensure logging is flushed
         log_queue.stop()
+

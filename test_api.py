@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+# Python 2 support
+from __future__ import print_function
 
 from netsnmp import *
 from netsnmp._api import SNMPError
 import sys, time
+
+try:
+    time.perf_counter()
+except:
+    time.perf_counter = time.time
 
 if __name__ == '__main__':
     ips = ['archt01', 'archt02', 'archt03', 'archt04', 'archt05']
@@ -30,13 +37,6 @@ if __name__ == '__main__':
                     for oid in responses:
                         _type, _value = snmp_hex2str(oid[TYPE], oid[VALUE]) if oid[TYPE]=="Hex-STRING" else (oid[TYPE], oid[VALUE])
                         print("[%s] %s = %s: %s" % (host, oid[OID], _type, _value))
-                    #    if oid[OID] == ".1.3.6.1.2.1.25.1.2.0" or oid[OID] == ".1.3.6.1.2.1.55.1.5.1.8.2":
-                    #        print("HEX2STR func:", snmp_hex2str(oid[VALUE]))
-                             #for char in b'07 DF 0C 0E 04 1D 11 00 2D 05 00 '.split(): ord(binascii.unhexlify(char))
-                             #year1, year2, month, day, hour, minute, second, _, _, _, _   = [ord(binascii.unhexlify(char)) for char in oid[VALUE].replace('"', '').split()]
-
-
-
     
                 # Non-context
                 #ss = SNMPSession(host, 'public', debug=1)
