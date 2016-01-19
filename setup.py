@@ -47,14 +47,14 @@ libs.append('czmq')
 
 setup(
     name="netsnmp", version="1.0a1",
-    description = 'Python3 NET-SNMP Bindings',
+    description = 'Python NET-SNMP Bindings',
     packages=find_packages(),
 
     ext_modules = [
        Extension("netsnmp._api",
                  ["netsnmp/session.c",
                   "netsnmp/get.c",
-#                  "netsnmp/get_async.c",
+                  "netsnmp/get_async.c",
                   "netsnmp/interface.c",
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,

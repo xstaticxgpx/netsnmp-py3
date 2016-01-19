@@ -6,8 +6,19 @@ from async_devtypes import SNMP_DEVTYPES
 import zmq
 import redis, hiredis
 import logging, logging.handlers
-import queue, random, sys, threading, time
+import random, sys, threading, time
 import multiprocessing as mp
+
+# Python 2 support
+try:
+    import queue
+except:
+    import Queue as queue
+
+try:
+    time.perf_counter()
+except:
+    time.perf_counter = time.time
 
 # command name
 cmdname = sys.argv[0]
@@ -170,14 +181,17 @@ if __name__ == '__main__':
                         datefmt='%Y-%m-%dT%H:%M:%S')
     log = logging.getLogger(__name__)
 
-    _log_queue = queue.Queue()
-    log_async  = logging.handlers.QueueHandler(_log_queue)
-    log_queue  = logging.handlers.QueueListener(_log_queue, *log.handlers)
+    try:
+        _log_queue = queue.Queue()
+        log_async  = logging.handlers.QueueHandler(_log_queue)
+        log_queue  = logging.handlers.QueueListener(_log_queue, *log.handlers)
 
-    log_queue.start()
+        log_queue.start()
 
-    # Overwrite handlers to only utilize QueueHandler()
-    log.handlers = [log_async,]
+        # Overwrite handlers to only utilize QueueHandler()
+        log.handlers = [log_async,]
+    except AttributeError:
+        pass
 
     #select = dbh.cursor()
     #select.arraysize = 4096
@@ -198,7 +212,7 @@ if __name__ == '__main__':
          community,
          host[MODEL] if host[MODEL] in SNMP_DEVTYPES else '__other__',
          SNMP_DEVTYPES[host[MODEL]] if host[MODEL] in SNMP_DEVTYPES else SNMP_DEVTYPES['__other__']
-         ) for host in (('archt01', 'other'), ('archt02', 'other'), ('archt03', 'other'), ('archt04', 'other'), ('archt05', 'other'))*20000]
+         ) for host in (('archt01', 'other'), ('archt02', 'other'), ('archt03', 'other'), ('archt04', 'other'), ('archt05', 'other'))*200]
     #select.close()
     #dbh.close()
     total = len(hosts)
@@ -217,8 +231,8 @@ if __name__ == '__main__':
         # Start ZeroMQ Streamer
         zmq_streamer = mp.Process(target=ZMQStreamer,
                                    args=(zmq_streamer_running,),
-                                   name='ZMQStreamer',
-                                   daemon=True)
+                                   name='ZMQStreamer')#,
+        zmq_streamer.daemon=True
 
         zmq_streamer.start()
 
@@ -233,9 +247,9 @@ if __name__ == '__main__':
             zmq_processors.append(
                 mp.Process(target=ZMQProcessor,
                             args=(success, timeout, oidcount),
-                            name='ZMQProc-%03d' % (i+1),
-                            daemon=True)
+                            name='ZMQProc-%03d' % (i+1))
             )
+            zmq_processors[-1].daemon=True
             zmq_processors[-1].start()
 
         time.sleep(ZMQ_PAUSE)
@@ -265,8 +279,9 @@ if __name__ == '__main__':
                                       _timeout,
                                       SNMP_RETRIES, 
                                       ZMQ_HWM, 
-                                      ZMQ_IN), daemon=True)
+                                      ZMQ_IN))
                 )
+                active_workers[-1].daemon=True
                 active_workers[-1].start()
 
                 del hosts[:MAX_PER_WORKER]
@@ -345,5 +360,8 @@ if __name__ == '__main__':
         log.info('total time taken %.3fs' % _elapsed)
 
         # Ensure logging is flushed
-        log_queue.stop()
+        try:
+            log_queue.stop()
+        except:
+            pass
 

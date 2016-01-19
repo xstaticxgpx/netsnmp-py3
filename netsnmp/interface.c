@@ -159,9 +159,9 @@ build_pdu(PyObject *self, PyObject *args)
    PyObject *oids;
    PyObject *oids_iter;
    PyObject *var;
-   int varlen;
    netsnmp_pdu *pdu;
    netsnmp_session nullss;
+   Py_ssize_t varlen;
 
    if (!PyArg_ParseTuple(args, "O", &oids)) {
        PyErr_Format(SNMPError, "build_pdu: unable to parse args tuple\n");

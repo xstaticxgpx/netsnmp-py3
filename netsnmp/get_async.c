@@ -12,6 +12,12 @@
 #define zmsg_addstrf zmsg_addstr
 #endif
 
+#if PY_MAJOR_VERSION >= 3
+#define Py_String(m) (PyUnicode_AsUTF8(m))
+#else
+#define Py_String(m) (PyString_AsString(m))
+#endif
+
 /* Global counters */
 static int active_hosts = 0;
 /* Global ZeroMQ pointers */
@@ -130,11 +136,11 @@ get_async(PyObject *self, PyObject *args)
         PyErr_Format(SNMPError, "get: unable to parse host tuple\n");
         return NULL;
       }
-      char *name = PyUnicode_AsUTF8(PyTuple_GetItem(host, 0));
-      char *comm = PyUnicode_AsUTF8(PyTuple_GetItem(host, 1));
+      char *name = Py_String(PyTuple_GetItem(host, 0));
+      char *comm = Py_String(PyTuple_GetItem(host, 1));
       // devtype string is passed as callback magic below
       // helps us quickly correlate devtype class instance back in Python via callback ZeroMQ message
-      char *devtype = PyUnicode_AsUTF8(PyTuple_GetItem(host, 2));
+      char *devtype = Py_String(PyTuple_GetItem(host, 2));
       PyObject *devtype_class = PyTuple_GetItem(host, 3);
       // Get PDU void pointer from the SNMPDevice class/subclass object
       netsnmp_pdu *devtype_pdu = PyLong_AsVoidPtr(PyObject_GetAttrString(devtype_class, "pdu"));

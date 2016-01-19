@@ -33,7 +33,7 @@ class SNMPDevice(object):
         # We'll remove double quotes from responses by default
         ## WARNING! ascii-alike hex strings could have " characters within the value
         ## this is handled properly in subclasses.
-        _vars = (var.replace('"', '').split('|', maxsplit=2) for var in response)
+        _vars = (var.replace('"', '').split('|', 2) for var in response)
 
         # We don't normally need type
         return {self._oid2str[oid]: value for oid, type, value in _vars}
