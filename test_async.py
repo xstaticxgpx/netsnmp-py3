@@ -289,7 +289,7 @@ if __name__ == '__main__':
                 if len(active_workers) < MAX_WORKERS:
                     p+=1
                     # test, slow initial startup
-                    time.sleep((SNMP_TIMEOUT/MAX_WORKERS)/1000)
+                    time.sleep((SNMP_TIMEOUT/MAX_WORKERS)/1000.0)
                     continue
                 else:
                     p=0
