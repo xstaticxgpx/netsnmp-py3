@@ -46,10 +46,14 @@ libs.append('zmq')
 libs.append('czmq')
 
 setup(
-    name="netsnmp", version="1.0a1",
-    description = 'Python NET-SNMP Bindings',
+    name="netsnmp",
+    version="1.0a1",
+    description='Python NET-SNMP Bindings',
+    author='Gabe Pacuilla',
+    author_email='root@un1x.su',
+    url='https://github.com/xstaticxgpx/netsnmp-py3',
+    license='MIT License',
     packages=find_packages(),
-
     ext_modules = [
        Extension("netsnmp._api",
                  ["netsnmp/session.c",
@@ -59,6 +63,16 @@ setup(
                   "netsnmp/_api.c"],
                  library_dirs=libdirs,
                  include_dirs=incdirs,
-                 libraries=libs )
-       ]
-    )
+                 libraries=libs)
+    ],
+    classifiers=(
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: POSIX',
+        'Programming Language :: C',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development :: Libraries'
+    ),
+)
