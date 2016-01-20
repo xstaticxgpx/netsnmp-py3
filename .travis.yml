@@ -34,3 +34,4 @@ install:
   
 script:
   - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include --libdir=$HOME/opt/lib build_ext -i
+  - python -m netsnmp
