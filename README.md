@@ -1,5 +1,7 @@
 # netsnmp-py3
-Python3 NET-SNMP Bindings (C Extension)
+Python NET-SNMP Bindings (C Extension)
+
+Supports Python 2.7 and 3.x
 
 [![Build Status](https://travis-ci.org/xstaticxgpx/netsnmp-py3.svg?branch=master)](https://travis-ci.org/xstaticxgpx/netsnmp-py3)
 
