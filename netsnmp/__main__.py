@@ -1,3 +1,6 @@
-import netsnmp._api as netsnmp
+# Python 2 support
+from __future__ import print_function
 
-[print(k, '=', v) for k, v in sorted(netsnmp.__dict__.items())]
+import netsnmp._api
+
+[print(k, '=', v) for k, v in sorted(netsnmp._api.__dict__.items())]
