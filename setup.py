@@ -46,13 +46,14 @@ libs.append('zmq')
 libs.append('czmq')
 
 setup(
-    name="netsnmp",
-    version="1.0a1",
+    name="netsnmp-py",
+    version="0.1",
     description='Python NET-SNMP Bindings',
     author='Gabe Pacuilla',
     author_email='root@un1x.su',
     url='https://github.com/xstaticxgpx/netsnmp-py3',
     license='MIT License',
+    download_url='https://github.com/xstaticxgpx/netsnmp-py3/archive/v0.1.tar.gz',
     packages=find_packages(),
     ext_modules = [
        Extension("netsnmp._api",
