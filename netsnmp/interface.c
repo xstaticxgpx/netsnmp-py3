@@ -3,12 +3,6 @@
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
-#if PY_MAJOR_VERSION >= 3
-#define Py_String(m, s) (PyUnicode_AsUTF8AndSize(m, s))
-#else
-#define Py_String(m, s) (PyString_AsString(m))
-#endif
-
 long long
 __py_attr_long(PyObject *obj, char * attr_name)
 {
@@ -49,7 +43,7 @@ __py_attr_get_string(PyObject *obj, char * attr_name, char **val,
     PyObject *attr = PyObject_GetAttrString(obj, attr_name);
     if (attr) {
       //printf("%s\n", "test-if");
-      *val = (char *)Py_String(attr, len);
+      *val = (char *)Py_String(attr);
       Py_DECREF(attr);
       ret++;
     }
@@ -161,7 +155,6 @@ build_pdu(PyObject *self, PyObject *args)
    PyObject *var;
    netsnmp_pdu *pdu;
    netsnmp_session nullss;
-   Py_ssize_t varlen;
 
    if (!PyArg_ParseTuple(args, "O", &oids)) {
        PyErr_Format(SNMPError, "build_pdu: unable to parse args tuple\n");
@@ -181,7 +174,7 @@ build_pdu(PyObject *self, PyObject *args)
    pdu = snmp_pdu_create(SNMP_MSG_GET);
 
    for ((oids_iter = PyObject_GetIter(oids)); (var = PyIter_Next(oids_iter)); (oid_arr_len = MAX_OID_LEN)) {
-       _oidstr = Py_String(var, varlen);
+       _oidstr = Py_String(var);
 
        if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
            snmp_free_pdu(pdu);

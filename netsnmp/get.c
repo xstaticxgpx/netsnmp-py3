@@ -3,12 +3,6 @@
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
-#if PY_MAJOR_VERSION >= 3
-#define Py_String(m, s) (PyUnicode_AsUTF8AndSize(m, s))
-#else
-#define Py_String(m, s) (PyString_AsString(m))
-#endif
-
 PyObject *
 get(PyObject *self, PyObject *args) 
 {
@@ -34,7 +28,6 @@ get(PyObject *self, PyObject *args)
   int err_num;
   int snmp_err_num;
   char err_buf[SPRINT_MAX_LEN], *err_bufp = err_buf;
-  Py_ssize_t *oidstr_len;
 
     if (!PyArg_ParseTuple(args, "OOO", &session, &oids, &responses)) {
         //snmp_sess_close(ss);
@@ -58,7 +51,7 @@ get(PyObject *self, PyObject *args)
 
         while (oids_iter && (oidstr = PyIter_Next(oids_iter)) && (oid_arr_len = MAX_OID_LEN)) {
 
-            char *_oidstr = (char *)Py_String(oidstr, oidstr_len);
+            char *_oidstr = (char *)Py_String(oidstr);
             if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
                oid_arr_len = 0;
             }

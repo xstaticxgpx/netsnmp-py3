@@ -4,6 +4,12 @@
 #define SUCCESS 1
 #define FAILURE 0
 
+#if PY_MAJOR_VERSION >= 3
+#define Py_String PyUnicode_AsUTF8
+#else
+#define Py_String PyString_AsString
+#endif
+
 int _debug_level;
 
 /* Exceptions */

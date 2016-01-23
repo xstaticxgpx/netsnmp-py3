@@ -12,12 +12,6 @@
 #define zmsg_addstrf zmsg_addstr
 #endif
 
-#if PY_MAJOR_VERSION >= 3
-#define Py_String(m) (PyUnicode_AsUTF8(m))
-#else
-#define Py_String(m) (PyString_AsString(m))
-#endif
-
 /* Global counters */
 static int active_hosts = 0;
 /* Global ZeroMQ pointers */
