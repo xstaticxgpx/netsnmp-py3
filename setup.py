@@ -35,7 +35,7 @@ else:
     netsnmp_libs = os.popen('net-snmp-config --libs').read()
     libdirs = re.findall(r"-L(\S+)", netsnmp_libs)
     incdirs = []
-    libs = re.findall(r"-l(\S+)", netsnmp_libs)
+    libs = re.findall(r" -l(\S+)", netsnmp_libs)
 
 # For _api.h references/travis-ci build
 incdirs+=_incdirs
@@ -47,13 +47,13 @@ libs.append('czmq')
 
 setup(
     name="netsnmp-py",
-    version="0.1",
+    version="0.2",
     description='Python NET-SNMP Bindings',
     author='Gabe Pacuilla',
     author_email='root@un1x.su',
     url='https://github.com/xstaticxgpx/netsnmp-py3',
     license='MIT License',
-    download_url='https://github.com/xstaticxgpx/netsnmp-py3/archive/v0.1.tar.gz',
+    download_url='https://github.com/xstaticxgpx/netsnmp-py3/archive/v0.2.tar.gz',
     packages=find_packages(),
     ext_modules = [
        Extension("netsnmp._api",
