@@ -1,1 +1,0 @@
-from netsnmp.client import *
