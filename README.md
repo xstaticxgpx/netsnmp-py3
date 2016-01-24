@@ -1,19 +1,35 @@
 # netsnmp-py3
+[![Build Status](https://travis-ci.org/xstaticxgpx/netsnmp-py3.svg?branch=master)](https://travis-ci.org/xstaticxgpx/netsnmp-py3)
+
 Python NET-SNMP Bindings (C Extension)
+
+https://pypi.python.org/pypi/netsnmp-py
 
 Supports Python 2.7 and 3.x
 
-[![Build Status](https://travis-ci.org/xstaticxgpx/netsnmp-py3.svg?branch=master)](https://travis-ci.org/xstaticxgpx/netsnmp-py3)
 
+Currently only supports SNMPv1 and SNMPv2c polling (GET, GETNEXT, WALK)
 
-Example usage: `python3 setup.py build_ext -i && ./test_api.py`
-
-Currently only supports get, getnext, and walk for now
+Support for SET and TRAP, as well as SNMPv3 is planned
 
 # Overview
 
+### Pip Install
 
-### Setup
+##### Debian testing/unstable (py2.7)
+```
+# apt-get install libsnmp30 libsnmp30-dev python-zmq libczmq3 libczmq-dev
+# pip install netsnmp-py
+```
+
+##### Debian testing/unstable (py3)
+```
+# apt-get install libsnmp30 libsnmp30-dev libczmq3 libczmq-dev
+# pip3 install pyzmq
+# pip3 install netsnmp-py
+```
+
+### Manual Setup
 
 Recommended to build this against a manually compiled NET-SNMP source - no need to install:
 
@@ -37,13 +53,12 @@ creating build/temp.linux-x86_64-3.4
 creating build/temp.linux-x86_64-3.4/netsnmp
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/session.c -o build/temp.linux-x86_64-3.4/netsnmp/session.o
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/get.c -o build/temp.linux-x86_64-3.4/netsnmp/get.o
-x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/getnext.c -o build/temp.linux-x86_64-3.4/netsnmp/getnext.o
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/get_async.c -o build/temp.linux-x86_64-3.4/netsnmp/get_async.o
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/interface.c -o build/temp.linux-x86_64-3.4/netsnmp/interface.o
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIC -I/Build/net-snmp-5.7.3/include -I./netsnmp -I/usr/include/python3.4m -c netsnmp/_api.c -o build/temp.linux-x86_64-3.4/netsnmp/_api.o
 creating build/lib.linux-x86_64-3.4
 creating build/lib.linux-x86_64-3.4/netsnmp
-x86_64-linux-gnu-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,relro -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 build/temp.linux-x86_64-3.4/netsnmp/session.o build/temp.linux-x86_64-3.4/netsnmp/get.o build/temp.linux-x86_64-3.4/netsnmp/getnext.o build/temp.linux-x86_64-3.4/netsnmp/get_async.o build/temp.linux-x86_64-3.4/netsnmp/interface.o build/temp.linux-x86_64-3.4/netsnmp/_api.o -L/Build/net-snmp-5.7.3/agent/.libs -L/Build/net-snmp-5.7.3/snmplib/.libs -lnetsnmp -lcrypto -lm -lzmq -lczmq -o build/lib.linux-x86_64-3.4/netsnmp/_api.cpython-34m.so
+x86_64-linux-gnu-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,relro -g -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 build/temp.linux-x86_64-3.4/netsnmp/session.o build/temp.linux-x86_64-3.4/netsnmp/get.o build/temp.linux-x86_64-3.4/netsnmp/get_async.o build/temp.linux-x86_64-3.4/netsnmp/interface.o build/temp.linux-x86_64-3.4/netsnmp/_api.o -L/Build/net-snmp-5.7.3/agent/.libs -L/Build/net-snmp-5.7.3/snmplib/.libs -lnetsnmp -lcrypto -lm -lzmq -lczmq -o build/lib.linux-x86_64-3.4/netsnmp/_api.cpython-34m.so
 copying build/lib.linux-x86_64-3.4/netsnmp/_api.cpython-34m.so -> netsnmp
 
 $ ldd netsnmp/_api.cpython-34m.so 
@@ -83,7 +98,7 @@ SNMP GETNEXT:
 [('.1.3.6.1.2.1.1.1.0', 'STRING', '"Linux archt01 4.3.0-1-ck #1 SMP PREEMPT Sun Nov 15 13:24:29 EST 2015 x86_64"'), ('.1.3.6.1.2.1.1.3.0', 'Timeticks', '1:11:39:35.05'), ('.1.3.6.1.2.1.1.5.0', 'STRING', '"archt01"')]
 ```
 
-SNMP WALK (load averages):
+SNMP WALK (generator):
 ```
 >>> with netsnmp.SNMPSession('archt01', 'public') as ss:
 ...     [response for response in ss.walk(['.1.3.6.1.4.1.2021.10.1.3'])]
