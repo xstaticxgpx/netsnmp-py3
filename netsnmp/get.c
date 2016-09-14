@@ -3,6 +3,19 @@
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 
+/* just for reuse */
+int bindOid(netsnmp_pdu *pdu, char *_oidstr, oid *oid_arr_ptr, size_t oid_arr_len)
+{
+    if (snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
+        snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
+    } else {
+        PyErr_Format(SNMPError, "get: unknown object ID for oid (%s)\n", (_oidstr ? _oidstr : "<null>"));
+        return 0;
+    }
+    return 1;
+}
+
+
 PyObject *
 get(PyObject *self, PyObject *args) 
 {
@@ -15,7 +28,7 @@ get(PyObject *self, PyObject *args)
   netsnmp_session *ss;
   netsnmp_pdu *pdu, *response;
   netsnmp_variable_list *var;
-  size_t oid_arr_len;
+  size_t oid_arr_len = MAX_OID_LEN;
   oid oid_arr[MAX_OID_LEN], *oid_arr_ptr = oid_arr;
   u_char mib_buf[MAX_OID_LEN], *mib_bufp = mib_buf;
   size_t mib_buf_len = -1;
@@ -44,30 +57,45 @@ get(PyObject *self, PyObject *args)
     } else {
         pdu = snmp_pdu_create(SNMP_MSG_GET);
     }
-
+    Py_DECREF(next);
+    
     if (oids) {
-
+        int ret = 0;
         oids_iter = PyObject_GetIter(oids);
-
-        while (oids_iter && (oidstr = PyIter_Next(oids_iter)) && (oid_arr_len = MAX_OID_LEN)) {
-
-            char *_oidstr = (char *)Py_String(oidstr);
-            if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
-               oid_arr_len = 0;
+        if (oids_iter) {
+            while ((oidstr = PyIter_Next(oids_iter)) && (oid_arr_len = MAX_OID_LEN)) {
+                char *_oidstr = (char *)Py_String(oidstr);
+                if (_oidstr) {
+                    ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
+                    // DECREF must receive only valid objects.
+                    Py_DECREF(_oidstr);
+                    if (!ret) {
+                        Py_DECREF(oids_iter);
+                        return NULL;
+                    }
+                }
             }
-
-            if (oid_arr_len) {
-                snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
+            Py_DECREF(oids_iter);
+        } else {
+            // Consider just as a simple string instead a tuple. It avoids some strange errors until
+            // you understand the function only accepts tuples and all other types gives error.
+            char *_oidstr = (char *)Py_String(oids);
+            if (_oidstr) {
+                ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
+                Py_DECREF(_oidstr);
+                if (!ret)
+                    return NULL;
             } else {
-                snmp_free_pdu(pdu);
-                //snmp_sess_close(ss);
-                PyErr_Format(SNMPError, "get: unknown object ID (%s)\n", (_oidstr ? _oidstr : "<null>"));
+                // Stop here. This should get tested before anything (if string or tuple).
+                // But let it be for now.
+                PyErr_Format(SNMPError, "get: unable to convert OID from tuple or string\n");
                 return NULL;
             }
-            //Py_DECREF(_oidstr);
-            Py_DECREF(oidstr);
         }
-        Py_DECREF(oids_iter);
+    } else {
+        // Nothing here. We should return instead going through everything else.
+        PyErr_Format(SNMPError, "get: error parsing oids argument (oids is null)\n");
+        return NULL;
     }
 
     /*
@@ -84,7 +112,7 @@ get(PyObject *self, PyObject *args)
     if (response == NULL && (status == STAT_SUCCESS))
         status = STAT_ERROR;
 
-    if (!status == STAT_SUCCESS) {
+    if (status != STAT_SUCCESS) {
         snmp_sess_error(ss, &err_num, &snmp_err_num, &err_bufp);
         if (_debug_level) printf("snmp_syserr: %d\nsnmp_errnum: %d\n", err_num, -snmp_err_num);
         snmp_free_pdu(response);
@@ -137,7 +165,6 @@ get(PyObject *self, PyObject *args)
                     __py_attr_set_string(varbind, "typestr", type_str, strlen(type_str));
                     __py_attr_set_string(varbind, "oid", mib_buf, mib_buf_len);
                     */
-
                     PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var), str_buf));
                 }
         }
