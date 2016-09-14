@@ -60,17 +60,10 @@ def oid_outside_tree(oid1, oid2):
     Return True if oid2 outside of oid1 tree
     Used by SNMPSession.walk
     """
-
-    oid1_split = [i for i in oid1.split('.') if i]
-    oid1_idx = len(oid1_split)-1
-
-    oid2_split = [i for i in oid2.split('.') if i]
-
     try:
-        if int(oid2_split[oid1_idx]) > int(oid1_split[oid1_idx]):
-            return True
-        else:
+        if oid2.startswith(oid1):
             return False
+        return True
     except:
         return True
 
@@ -151,7 +144,7 @@ class SNMPSession(object):
         for oid in oids:
             next_oid = oid
             while True:
-                response = self.getnext([next_oid,])[0]
+                response = self.getnext(next_oid)[0]
                 if oid_outside_tree(oid, response[OID]):
                     break
                 elif response[TYPE] == "ENDOFMIBVIEW":

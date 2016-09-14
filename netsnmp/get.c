@@ -61,45 +61,47 @@ get(PyObject *self, PyObject *args)
     
     if (oids) {
         int ret = 0;
-        oids_iter = PyObject_GetIter(oids);
-        if (oids_iter) {
-            while ((oidstr = PyIter_Next(oids_iter)) && (oid_arr_len = MAX_OID_LEN)) {
+        // If it is a String, let's use it
+        if (PyBytes_Check(oids) || PyUnicode_Check(oids)) {
+            char *_oidstr = (char *)Py_String(oids);
+            if (_oidstr) {
+                ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
+                if (!ret)
+                    return NULL;
+            } else {
+                // Stop here. This should get tested before anything (if string or tuple).
+                // But let it be for now.
+                PyErr_Format(SNMPError, "get: unable to convert OID from string\n");
+                return NULL;
+            }
+
+        // Otherwise, a sequence...
+        } else if (PyList_Check(oids) || PyTuple_Check(oids)) {
+
+            PyObject* seq;
+            int i, len;
+            seq = PySequence_Fast(oids, "get: expected a sequence");
+            len = PySequence_Size(oids);
+            for (i = 0; i < len; i++) {
+                PyObject *oidstr = PySequence_Fast_GET_ITEM(seq, i);
                 char *_oidstr = (char *)Py_String(oidstr);
                 if (_oidstr) {
                     ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
-                    // DECREF must receive only valid objects.
-                    Py_DECREF(_oidstr);
                     if (!ret) {
-                        Py_DECREF(oids_iter);
-                        snmp_free_pdu(pdu);
+                        Py_DECREF(seq);
                         return NULL;
                     }
                 }
             }
-            Py_DECREF(oids_iter);
+            Py_DECREF(seq);
+        // Ops, wrong type
         } else {
-            // Consider just as a simple string instead a tuple. It avoids some strange errors until
-            // you understand the function only accepts tuples and all other types gives error.
-            char *_oidstr = (char *)Py_String(oids);
-            if (_oidstr) {
-                ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
-                Py_DECREF(_oidstr);
-                if (!ret) {
-                    snmp_free_pdu(pdu);
-                    return NULL;
-                }
-            } else {
-                // Stop here. This should get tested before anything (if string or tuple).
-                // But let it be for now.
-                snmp_free_pdu(pdu);
-                PyErr_Format(SNMPError, "get: unable to convert OID from tuple or string\n");
-                return NULL;
-            }
+            PyErr_Format(SNMPError, "get: oids wrong type (oids is not str or tuple/list)\n");
+            return NULL;
         }
     } else {
         // Nothing here. We should return instead going through everything else.
         PyErr_Format(SNMPError, "get: error parsing oids argument (oids is null)\n");
-        snmp_free_pdu(pdu);
         return NULL;
     }
 
@@ -120,7 +122,7 @@ get(PyObject *self, PyObject *args)
     if (status != STAT_SUCCESS) {
         snmp_sess_error(ss, &err_num, &snmp_err_num, &err_bufp);
         if (_debug_level) printf("snmp_syserr: %d\nsnmp_errnum: %d\n", err_num, -snmp_err_num);
-        snmp_free_pdu(pdu);
+        snmp_free_pdu(response);
         //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "%s\n", err_bufp);
         return NULL;
@@ -173,9 +175,9 @@ get(PyObject *self, PyObject *args)
                     PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var), str_buf));
                 }
         }
+        snmp_free_pdu(response);
         //snmp_sess_close(ss);
     }
     //return responses ? responses : NULL;
-    snmp_free_pdu(response);
     return Py_BuildValue("i", SUCCESS);
 }
