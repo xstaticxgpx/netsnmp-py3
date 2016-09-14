@@ -71,6 +71,7 @@ get(PyObject *self, PyObject *args)
                     Py_DECREF(_oidstr);
                     if (!ret) {
                         Py_DECREF(oids_iter);
+                        snmp_free_pdu(pdu);
                         return NULL;
                     }
                 }
@@ -83,11 +84,14 @@ get(PyObject *self, PyObject *args)
             if (_oidstr) {
                 ret = bindOid(pdu, _oidstr, oid_arr_ptr, oid_arr_len);
                 Py_DECREF(_oidstr);
-                if (!ret)
+                if (!ret) {
+                    snmp_free_pdu(pdu);
                     return NULL;
+                }
             } else {
                 // Stop here. This should get tested before anything (if string or tuple).
                 // But let it be for now.
+                snmp_free_pdu(pdu);
                 PyErr_Format(SNMPError, "get: unable to convert OID from tuple or string\n");
                 return NULL;
             }
@@ -95,6 +99,7 @@ get(PyObject *self, PyObject *args)
     } else {
         // Nothing here. We should return instead going through everything else.
         PyErr_Format(SNMPError, "get: error parsing oids argument (oids is null)\n");
+        snmp_free_pdu(pdu);
         return NULL;
     }
 
@@ -115,7 +120,7 @@ get(PyObject *self, PyObject *args)
     if (status != STAT_SUCCESS) {
         snmp_sess_error(ss, &err_num, &snmp_err_num, &err_bufp);
         if (_debug_level) printf("snmp_syserr: %d\nsnmp_errnum: %d\n", err_num, -snmp_err_num);
-        snmp_free_pdu(response);
+        snmp_free_pdu(pdu);
         //snmp_sess_close(ss);
         PyErr_Format(SNMPError, "%s\n", err_bufp);
         return NULL;
@@ -168,9 +173,9 @@ get(PyObject *self, PyObject *args)
                     PyList_Append(responses, Py_BuildValue("(sss)", mib_buf, __get_type_str(var), str_buf));
                 }
         }
-        snmp_free_pdu(response);
         //snmp_sess_close(ss);
     }
     //return responses ? responses : NULL;
+    snmp_free_pdu(response);
     return Py_BuildValue("i", SUCCESS);
 }
