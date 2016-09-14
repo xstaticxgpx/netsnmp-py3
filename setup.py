@@ -47,7 +47,7 @@ libs.append('czmq')
 
 setup(
     name="netsnmp-py",
-    version="0.2",
+    version="0.3",
     description='Python NET-SNMP Bindings',
     author='Gabe Pacuilla',
     author_email='root@un1x.su',
