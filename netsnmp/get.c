@@ -60,7 +60,16 @@ get(PyObject *self, PyObject *args)
     Py_DECREF(next);
     
     if (oids) {
+
+        // dict() is iterable and gives problem ahead
+        if (PyDict_Check(oids)) {
+            PyErr_Format(SNMPError, "get: OID as a dict isn't supported\n");
+            return NULL;
+        }
         int ret = 0;
+        // if it can be converted to a tuple, than it's fine. This should get dict_values and dict_key structures.
+        PyObject *newoids  = Py_BuildValue("(s)", oids);
+
         // If it is a String, let's use it
         if (PyBytes_Check(oids) || PyUnicode_Check(oids)) {
             char *_oidstr = (char *)Py_String(oids);
@@ -69,17 +78,18 @@ get(PyObject *self, PyObject *args)
                 if (!ret)
                     return NULL;
             } else {
-                // Stop here. This should get tested before anything (if string or tuple).
-                // But let it be for now.
                 PyErr_Format(SNMPError, "get: unable to convert OID from string\n");
                 return NULL;
             }
 
-        // Otherwise, a sequence...
-        } else if (PyList_Check(oids) || PyTuple_Check(oids)) {
+        // Otherwise, a sequence... 
+        // dict_values is different, I don't know why. PyList_Check or PySequence_Check doesn't consider it as list
+        // another approach would be checking type by type whi PySequence_Fast() can be used on.
+        } else if (PySequence_Check(oids) || newoids ) {
+            Py_XDECREF(newoids);
 
             PyObject* seq;
-            int i, len;
+            Py_ssize_t i, len;
             seq = PySequence_Fast(oids, "get: expected a sequence");
             len = PySequence_Size(oids);
             for (i = 0; i < len; i++) {
@@ -94,9 +104,10 @@ get(PyObject *self, PyObject *args)
                 }
             }
             Py_DECREF(seq);
+
         // Ops, wrong type
         } else {
-            PyErr_Format(SNMPError, "get: oids wrong type (oids is not str or tuple/list)\n");
+            PyErr_Format(SNMPError, "get: oids wrong type (oids is not str or tuple/list/dict_values)\n");
             return NULL;
         }
     } else {
