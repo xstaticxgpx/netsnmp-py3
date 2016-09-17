@@ -180,16 +180,18 @@ build_pdu(PyObject *self, PyObject *args)
        if (!_oidstr) {
            Py_DECREF(oids_iter);
            Py_DECREF(var);
+           snmp_free_pdu(pdu);
            PyErr_Format(SNMPError, "build_pdu: wrong Python str conversion\n");
            return NULL;
        }
        if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
+           Py_DECREF(oids_iter);
+           Py_DECREF(var);
            snmp_free_pdu(pdu);
            PyErr_Format(SNMPError, "build_pdu: unknown object ID (%s)\n", (_oidstr ? _oidstr : "<null>"));
            return NULL;
        }
        snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
-       Py_DECREF(_oidstr);
        Py_DECREF(var);
    }
    Py_XDECREF(oids_iter);
