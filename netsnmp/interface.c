@@ -185,6 +185,7 @@ build_pdu(PyObject *self, PyObject *args)
            return NULL;
        }
        if (!snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
+           Py_DECREF(_oidstr);
            Py_DECREF(oids_iter);
            Py_DECREF(var);
            snmp_free_pdu(pdu);
