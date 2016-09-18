@@ -4,7 +4,7 @@
 #include <net-snmp/net-snmp-includes.h>
 
 /* just for reuse */
-int bindOid(netsnmp_pdu *pdu, char *_oidstr, oid *oid_arr_ptr, size_t oid_arr_len)
+int bindOid(netsnmp_pdu *pdu, const char *_oidstr, oid *oid_arr_ptr, size_t oid_arr_len)
 {
     if (snmp_parse_oid(_oidstr, oid_arr_ptr, &oid_arr_len)) {
         snmp_add_null_var(pdu, oid_arr_ptr, oid_arr_len);
@@ -60,15 +60,7 @@ get(PyObject *self, PyObject *args)
     Py_DECREF(next);
     
     if (oids) {
-
-        // dict() is iterable and gives problem ahead
-        if (PyDict_Check(oids)) {
-            PyErr_Format(SNMPError, "get: OID as a dict isn't supported\n");
-            return NULL;
-        }
         int ret = 0;
-        // if it can be converted to a tuple, than it's fine. This should get dict_values and dict_key structures.
-        PyObject *newoids  = Py_BuildValue("(s)", oids);
 
         // If it is a String, let's use it
         if (PyBytes_Check(oids) || PyUnicode_Check(oids)) {
@@ -82,16 +74,15 @@ get(PyObject *self, PyObject *args)
                 return NULL;
             }
 
+
         // Otherwise, a sequence... 
         // dict_values is different, I don't know why. PyList_Check or PySequence_Check doesn't consider it as list
-        // another approach would be checking type by type whi PySequence_Fast() can be used on.
-        } else if (PySequence_Check(oids) || newoids ) {
-            Py_XDECREF(newoids);
-
+        } else if (PySequence_Length(oids) != -1) {
             PyObject* seq;
             Py_ssize_t i, len;
             seq = PySequence_Fast(oids, "get: expected a sequence");
             len = PySequence_Size(oids);
+
             for (i = 0; i < len; i++) {
                 PyObject *oidstr = PySequence_Fast_GET_ITEM(seq, i);
                 char *_oidstr = (char *)Py_String(oidstr);
@@ -107,7 +98,7 @@ get(PyObject *self, PyObject *args)
 
         // Ops, wrong type
         } else {
-            PyErr_Format(SNMPError, "get: oids wrong type (oids is not str or tuple/list/dict_values)\n");
+            PyErr_Format(SNMPError, "get: oids wrong type (not str or sequence)\n");
             return NULL;
         }
     } else {
