@@ -60,14 +60,13 @@ def oid_outside_tree(oid1, oid2):
     Return True if oid2 outside of oid1 tree
     Used by SNMPSession.walk
     """
-    oid1_split = [i for i in oid1.split('.') if i]
-    oid1_idx = len(oid1_split)-1
-
-    oid2_split = [i for i in oid2.split('.') if i]
-
-    if oid2_split[oid1_idx] > oid1_split[oid1_idx]:
+    try:
+        if oid2.startswith(oid1):
+            return False
         return True
-    return False
+    except:
+        return True
+
 
 class SNMPSession(object):
     """
@@ -112,6 +111,7 @@ class SNMPSession(object):
         """
         # Define list to be populated by C API get()
         responses = []
+        self._next = False
 
         # netsnmp.get(SNMPSession(), oids=[oid,..], responses=[])
         # Response information is appended as a tuple of (OID, TYPE, VALUE) to responses
@@ -139,10 +139,12 @@ class SNMPSession(object):
         """
         Generator implementation of snmpwalk using self.getnext
         """
+        if type(oids) is str:
+            oids = [oids]
         for oid in oids:
             next_oid = oid
             while True:
-                response = self.getnext([next_oid,])[0]
+                response = self.getnext(next_oid)[0]
                 if oid_outside_tree(oid, response[OID]):
                     break
                 elif response[TYPE] == "ENDOFMIBVIEW":
