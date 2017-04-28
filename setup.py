@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+VERSION="0.4"
+
 intree=0
 
 _incdirs = ['./netsnmp']
@@ -47,13 +49,13 @@ libs.append('czmq')
 
 setup(
     name="netsnmp-py",
-    version="0.3",
+    version=VERSION,
     description='Python NET-SNMP Bindings',
     author='Gabe Pacuilla',
     author_email='root@un1x.su',
     url='https://github.com/xstaticxgpx/netsnmp-py3',
     license='MIT License',
-    download_url='https://github.com/xstaticxgpx/netsnmp-py3/archive/v0.2.tar.gz',
+    download_url='https://github.com/xstaticxgpx/netsnmp-py3/archive/v%s.tar.gz' % VERSION,
     packages=find_packages(),
     ext_modules = [
        Extension("netsnmp._api",
