@@ -26,6 +26,7 @@ char *__get_type_str     (netsnmp_variable_list *var);
 /* Synchronous(thread-safe) implementations */
 PyObject *create_session (PyObject *self, PyObject *args);
 PyObject *get            (PyObject *self, PyObject *args);
+PyObject *set            (PyObject *self, PyObject *args);
 // GETNEXT and WALK functionality wrapped ontop of get in Python
 PyObject *close_session  (PyObject *self, PyObject *args);
 

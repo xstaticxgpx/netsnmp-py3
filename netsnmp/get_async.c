@@ -15,8 +15,7 @@
 /* Global counters */
 static int active_hosts = 0;
 /* Global ZeroMQ pointers */
-static zctx_t *zmq_ctx;
-static void *zmq_push;
+static zsock_t *zmq_push;
 
 static netsnmp_callback *
 _cb(int operation, netsnmp_session *ss, int reqid,
@@ -77,6 +76,7 @@ get_async(PyObject *self, PyObject *args)
   int timeout;
   int retries;
   int ZMQ_HWM;
+  int zmq_linger = -1;
   char *ZMQ_IN;
   int rc;
   //PyObject *py_callback;
@@ -92,14 +92,19 @@ get_async(PyObject *self, PyObject *args)
     }
     _debug_level = 0;
 
-    zmq_ctx = zctx_new();
-    int zmq_linger = -1;
-    zctx_set_linger(zmq_ctx, zmq_linger);
-    zmq_push = zsocket_new(zmq_ctx, ZMQ_PUSH);
-    zmq_setsockopt(zmq_push, ZMQ_SNDHWM, &ZMQ_HWM, sizeof(&ZMQ_HWM));
+    zmq_push = zsock_new(ZMQ_PUSH);
+    zsock_set_linger(zmq_push, zmq_linger);
+    #if CZMQ_VERSION_MAJOR >= 3
+    // >=libzmq3
+    zsock_set_sndhwm(zmq_push, ZMQ_HWM);
+    zsock_set_rcvhwm(zmq_push, ZMQ_HWM);
+    #else
+    // libzmq2
+    zsock_set_hwm(zmq_push, ZMQ_HWM);
+    #endif
 
-    rc = zsocket_connect(zmq_push, "%s", ZMQ_IN); assert (rc == 0);
-    if (_debug_level) printf("### %s (%d) [ZMQ_%s]\n", ZMQ_IN, rc, zsocket_type_str(zmq_push));
+    rc = zsock_connect(zmq_push, "%s", ZMQ_IN); assert (rc == 0);
+    if (_debug_level) printf("### %s (%d) [ZMQ_%s]\n", ZMQ_IN, rc, zsock_type_str(zmq_push));
 
     snmp_set_do_debugging(0);
     snmp_disable_stderrlog();
@@ -198,6 +203,6 @@ get_async(PyObject *self, PyObject *args)
     // Close SNMP sockets
     snmp_close_sessions();
     // Close ZeroMQ context
-    zctx_destroy(&zmq_ctx);
+    zsock_destroy(&zmq_push);
     return Py_BuildValue("i", SUCCESS);
 }

@@ -21,9 +21,7 @@ get(PyObject *self, PyObject *args)
 {
   PyObject *session;
   PyObject *oids;
-  PyObject *oids_iter;
   PyObject *responses;
-  PyObject *oidstr;
   PyObject *next;
   netsnmp_session *ss;
   netsnmp_pdu *pdu, *response;
