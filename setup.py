@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-VERSION="0.4"
+VERSION="0.5"
 
 intree=0
 
@@ -61,6 +61,7 @@ setup(
        Extension("netsnmp._api",
                  ["netsnmp/session.c",
                   "netsnmp/get.c",
+                  "netsnmp/set.c",
                   "netsnmp/get_async.c",
                   "netsnmp/interface.c",
                   "netsnmp/_api.c"],

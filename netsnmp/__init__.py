@@ -27,8 +27,7 @@ SNMP WALK (load averages)
 
 """
 
-#import netsnmp._api as netsnmp
-from . import _api as netsnmp
+from netsnmp import _api as netsnmp
 from ._hex import snmp_hex2str
 
 class SNMPRuntimeError(netsnmp.SNMPError): # pylint: disable=no-init
@@ -54,6 +53,8 @@ SNMP_ERR = [
 OID = 0
 TYPE = 1
 VALUE = 2
+
+__version__ = '0.5'
 
 def oid_outside_tree(oid1, oid2):
     """
@@ -154,3 +155,40 @@ class SNMPSession(object):
                 next_oid = response[OID]
                 yield response
         raise StopIteration
+
+
+    """
+    # value: 
+    # value_type: optional, but you can force the type - there are lots unlikely to be correctly guessed.
+    #   Source: snmpset -h
+          TYPE: one of i, u, t, a, o, s, x, d, b
+            i: INTEGER, u: unsigned INTEGER, t: TIMETICKS, a: IPADDRESS
+            o: OBJID, s: STRING, x: HEX STRING, d: DECIMAL STRING, b: BITS
+            U: unsigned int64, I: signed int64, F: float, D: double
+    """
+    def set(self, oids, value, value_type=None):
+        """
+        Wrap netsnmp._api.set C function
+        """
+        # auto guess value type. It's not the best way, but it can be useful.
+        if value_type is None:
+            if type(value) is str: 
+                value_type = 's'
+            elif type(value) is int:
+                value_type = 'i'
+            elif type(value) is float:
+                value_type = 'F'
+            else:
+                raise SNMPRuntimeError("Couldn't guess VALUE type. Please, be explicit.")
+        else:
+            # check
+            if value_type not in ['i', 'u', 't', 'a', 'o', 's', 'x', 'd', 'b', 'U', 'I', 'F', 'D']:
+                raise SNMPRuntimeError("Invalid value type", value_type)
+
+        # Return 1 on success, possibly raises SNMPError() exception
+        _rc = netsnmp.set(self, oids, value_type, value)
+        # Sanity check rc
+        if not _rc:
+            raise SNMPRuntimeError("Invalid return code", _rc)
+        return _rc 
+
