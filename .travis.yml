@@ -5,28 +5,29 @@ python:
   - "3.3"
   - "3.4"
   - "3.5"
+  - "3.6"
   - "nightly"
 
 # Botstrap dependancies
 before_install:
-  - export ZMQ413_MD5SUM='d0824317348cfb44b8692e19cc73dc3a'
-  - export CZMQ302_MD5SUM='7697688bf65a35bc33ae2db51ebb0e3b'
+  - export ZMQ425_MD5SUM='a1c95b34384257e986842f4d006957b8'
+  - export CZMQ411_MD5SUM='6d3a6fdd25c2bb29897c53670dce97bf'
   - export NETSNMP573_MD5SUM='d4a3459e1577d0efa8d96ca70a885e53'
   - export PKG_CONFIG_PATH=$HOME/opt/lib/pkgconfig
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/opt/lib:./net-snmp-5.7.3/snmplib/.libs
 
   - mkdir $HOME/opt
   
-  # ZeroMQ 4.1.3 and CZMQ 3.0.2
-  - wget --no-check-certificate "https://archive.org/download/zeromq_4.1.3/zeromq-4.1.3.tar.gz" -O zeromq-4.1.3.tar.gz
-  - test "`md5sum -b zeromq-4.1.3.tar.gz | cut -d\  -f1`"=="$ZMQ413_MD5SUM" || exit 1
-  - tar xzf zeromq-4.1.3.tar.gz
-  - ( cd zeromq-4.1.3 && ./configure --prefix=$HOME/opt --without-{libsodium,pgm} && make && make install )
+  # ZeroMQ 4.2.5 and CZMQ 4.1.1
+  - wget --no-check-certificate "https://github.com/zeromq/libzmq/releases/download/v4.2.5/zeromq-4.2.5.tar.gz" -O zeromq-4.2.5.tar.gz
+  - test "`md5sum -b zeromq-4.2.5.tar.gz | cut -d\  -f1`"=="$ZMQ425_MD5SUM" || exit 1
+  - tar xzf zeromq-4.2.5.tar.gz
+  - ( cd zeromq-4.2.5 && ./autogen.sh && ./configure --prefix=$HOME/opt --without-{libsodium,pgm} && make && make install )
   
-  - wget "https://github.com/zeromq/czmq/archive/v3.0.2.tar.gz" -O czmq-3.0.2.tar.gz
-  - test "`md5sum -b czmq-3.0.2.tar.gz | cut -d\  -f1`"=="$CZMQ302_MD5SUM" || exit 1
-  - tar xzf czmq-3.0.2.tar.gz
-  - ( cd czmq-3.0.2 && ./autogen.sh && ./configure --prefix=$HOME/opt && make && make install )
+  - wget --no-check-certificate "https://github.com/zeromq/czmq/releases/download/v4.1.1/czmq-4.1.1.tar.gz" -O czmq-4.1.1.tar.gz
+  - test "`md5sum -b czmq-4.1.1.tar.gz | cut -d\  -f1`"=="$CZMQ411_MD5SUM" || exit 1
+  - tar xzf czmq-4.1.1.tar.gz
+  - ( cd czmq-4.1.1 && ./autogen.sh && ./configure --prefix=$HOME/opt && make && make install )
   
   # Latest NET-SNMP
   - wget "http://sourceforge.net/projects/net-snmp/files/net-snmp/5.7.3/net-snmp-5.7.3.tar.gz/download" -O net-snmp-5.7.3.tar.gz
@@ -36,7 +37,7 @@ before_install:
 
 install:
   - pip install -r requirements.txt
+  - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include --libdir=$HOME/opt/lib build_ext -i
   
 script:
-  - python setup.py --basedir=./net-snmp-5.7.3 --incdir=$HOME/opt/include --libdir=$HOME/opt/lib build_ext -i
   - python -m netsnmp
