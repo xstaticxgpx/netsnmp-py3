@@ -27,7 +27,7 @@ before_install:
   - wget --no-check-certificate "https://github.com/zeromq/czmq/releases/download/v4.1.1/czmq-4.1.1.tar.gz" -O czmq-4.1.1.tar.gz
   - test "`md5sum -b czmq-4.1.1.tar.gz | cut -d\  -f1`"=="$CZMQ411_MD5SUM" || exit 1
   - tar xzf czmq-4.1.1.tar.gz
-  - ( cd czmq-4.1.1 && ./autogen.sh && ./configure --prefix=$HOME/opt && make && make install )
+  - ( cd czmq-4.1.1 && ./configure --prefix=$HOME/opt && make && make install )
   
   # Latest NET-SNMP
   - wget "http://sourceforge.net/projects/net-snmp/files/net-snmp/5.7.3/net-snmp-5.7.3.tar.gz/download" -O net-snmp-5.7.3.tar.gz
