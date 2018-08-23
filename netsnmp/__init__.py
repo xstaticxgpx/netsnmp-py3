@@ -153,4 +153,3 @@ class SNMPSession(object):
                     raise netsnmp.SNMPError(response[TYPE], response[VALUE])
                 next_oid = response[OID]
                 yield response
-        raise StopIteration
