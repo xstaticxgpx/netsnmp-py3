@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-VERSION="0.4"
+VERSION="0.5"
 
 intree=0
 
