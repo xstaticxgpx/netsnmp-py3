@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-VERSION="0.5"
+VERSION="0.5.2"
 
 intree=0
 
@@ -68,7 +68,7 @@ setup(
                  include_dirs=incdirs,
                  libraries=libs)
     ],
-    classifiers=(
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
@@ -77,5 +77,5 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries'
-    ),
+    ],
 )
