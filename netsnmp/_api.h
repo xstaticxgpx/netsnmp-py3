@@ -10,10 +10,10 @@
 #define Py_String PyString_AsString
 #endif
 
-int _debug_level;
+static int _debug_level;
 
 /* Exceptions */
-PyObject *SNMPError;
+static PyObject *SNMPError;
 
 /* Functions */
 long long __py_attr_long (PyObject *obj, char *attr_name);
